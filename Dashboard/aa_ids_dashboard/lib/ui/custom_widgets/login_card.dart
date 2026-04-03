@@ -42,9 +42,9 @@ class LoginCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Container(
-        width: 400, // You can make this responsive if needed
+        width: 400, //  make this responsive if needed
         padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration( // Use AppColors for consistency
+        decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(10),
         ),
@@ -77,9 +77,8 @@ class LoginCard extends StatelessWidget {
               controller: usernameController,
               onChanged: onUsernameChanged,
               style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration( // Leverage InputDecorationTheme
+              decoration: InputDecoration( // uses InputDecorationTheme as defined
                 hintText: usernameHint,
-                // The rest of the styling (fillColor, border, hintStyle) comes from AppTheme.inputDecorationTheme
               ),
             ),
 

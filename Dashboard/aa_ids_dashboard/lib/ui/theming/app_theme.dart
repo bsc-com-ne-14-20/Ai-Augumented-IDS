@@ -61,7 +61,7 @@ class AppTheme {
       // 🔹 Input Fields (Forms)
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.background,
         hintStyle: const TextStyle(color: AppColors.textMuted),
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         border: OutlineInputBorder(
