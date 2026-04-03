@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Matches the dark theme of the card
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Use theme's scaffold background color
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
