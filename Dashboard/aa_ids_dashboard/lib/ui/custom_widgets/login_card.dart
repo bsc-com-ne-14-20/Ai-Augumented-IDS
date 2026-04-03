@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:aa_ids_dashboard/ui/theming/app_colors.dart'; // Import AppColors
 
 class LoginCard extends StatelessWidget {
   final Widget logo;
@@ -38,14 +39,14 @@ class LoginCard extends StatelessWidget {
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Container(
-        width: 380, // You can make this responsive if needed
+        width: 400, // You can make this responsive if needed
         padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E), // Dark background
-          borderRadius: BorderRadius.circular(16),
+        decoration: BoxDecoration( // Use AppColors for consistency
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -58,11 +59,7 @@ class LoginCard extends StatelessWidget {
             // Title
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 24),
             ),
 
             const SizedBox(height: 32),
@@ -72,10 +69,7 @@ class LoginCard extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 usernameLabel,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             const SizedBox(height: 8),
@@ -83,19 +77,9 @@ class LoginCard extends StatelessWidget {
               controller: usernameController,
               onChanged: onUsernameChanged,
               style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
+              decoration: InputDecoration( // Leverage InputDecorationTheme
                 hintText: usernameHint,
-                hintStyle: const TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: const Color(0xFF2C2C2C),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
+                // The rest of the styling (fillColor, border, hintStyle) comes from AppTheme.inputDecorationTheme
               ),
             ),
 
@@ -106,10 +90,7 @@ class LoginCard extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 passwordLabel,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             const SizedBox(height: 8),
@@ -117,20 +98,10 @@ class LoginCard extends StatelessWidget {
               controller: passwordController,
               onChanged: onPasswordChanged,
               obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
+              style: const TextStyle(color: Colors.white), // Keep explicit white for input text for now
+              decoration: InputDecoration( // Leverage InputDecorationTheme
                 hintText: passwordHint,
-                hintStyle: const TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: const Color(0xFF2C2C2C),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
+                // The rest of the styling (fillColor, border, hintStyle) comes from AppTheme.inputDecorationTheme
               ),
             ),
 
@@ -142,13 +113,7 @@ class LoginCard extends StatelessWidget {
               height: 52,
               child: ElevatedButton(
                 onPressed: isLoading ? null : onLoginPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2196F3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
+                // Styling comes from AppTheme.elevatedButtonTheme
                 child: isLoading
                     ? const SizedBox(
                         height: 24,
@@ -160,11 +125,7 @@ class LoginCard extends StatelessWidget {
                       )
                     : Text(
                         buttonText,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: Theme.of(context).elevatedButtonTheme.style?.foregroundColor != null ? Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).elevatedButtonTheme.style?.foregroundColor?.resolve({})) : Theme.of(context).textTheme.labelLarge,
                       ),
               ),
             ),

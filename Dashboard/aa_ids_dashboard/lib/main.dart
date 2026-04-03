@@ -1,7 +1,9 @@
+import 'package:aa_ids_dashboard/ui/theming/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/state/auth_provider.dart';
 import '/ui/screens/login_screen.dart';
+import 'ui/theming/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,10 +19,7 @@ class MyApp extends StatelessWidget {
       create: (_) => AuthProvider(),
       child: MaterialApp(
         title: 'AA-IDS Dashboard',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.darkTheme,
         home: const LoginScreen(),
       ),
     );
