@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '/providers/auth_provider.dart';
+import '/state/auth_provider.dart';
 import '/ui/screens/login_screen.dart';
 
 void main() {
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AuthProvider(),
       child: MaterialApp(
-        title: 'Flutter Demo',
+        title: 'AA-IDS Dashboard',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
