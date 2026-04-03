@@ -65,8 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.all(24.0),
             child: LoginCard(
               logo: const IdsLogo(size: 80),
-              usernameLabel: "Username",
-              usernameHint: "admin",
               buttonText: "SIGN IN",
               isLoading: authProvider.isLoading,
               usernameController: _emailController,
