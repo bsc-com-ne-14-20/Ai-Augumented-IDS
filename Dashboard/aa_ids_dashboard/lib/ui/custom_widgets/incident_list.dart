@@ -123,7 +123,7 @@ class IncidentList extends StatelessWidget {
                 Expanded(flex: 2, child: Text("ID", style: TextStyle(color: Colors.white54, fontSize: 12))),
                 Expanded(flex: 2, child: Text("TIME", style: TextStyle(color: Colors.white54, fontSize: 12))),
                 Expanded(flex: 4, child: Text("ENDPOINT", style: TextStyle(color: Colors.white54, fontSize: 12))),
-                Expanded(flex: 2, child: Text("MTH", style: TextStyle(color: Colors.white54, fontSize: 12))),
+                Expanded(flex: 2, child: Text("METHOD", style: TextStyle(color: Colors.white54, fontSize: 12))),
                 Expanded(flex: 3, child: Text("THREAT", style: TextStyle(color: Colors.white54, fontSize: 12))),
                 Expanded(flex: 3, child: Text("STATUS", style: TextStyle(color: Colors.white54, fontSize: 12))),
               ],
