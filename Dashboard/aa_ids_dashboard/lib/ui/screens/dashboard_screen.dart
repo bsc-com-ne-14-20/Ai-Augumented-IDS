@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import '../custom_widgets/dashboard_metric_card.dart';
+import '../custom_widgets/incident_list.dart';
+import '/models/dashboard_models.dart';
 
+final List<Incident> sampleIncidents = [
+                Incident(id: "INC-0047", time: "14:31", endpoint: "/api/login", method: "POST", threat: "High", status: "Open"),
+                Incident(id: "INC-0046", time: "14:28", endpoint: "/admin/cfg", method: "GET", threat: "High", status: "Open"),
+                Incident(id: "INC-0045", time: "14:22", endpoint: "/api/users", method: "POST", threat: "Medium", status: "Open"),
+                // ... add more
+              ];
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -70,6 +78,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text(
                 "Network Activity Overview",
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+              ),
+
+              const SizedBox(height: 32),
+
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 500, // Providing a fixed height for the scrollable list
+                      child: IncidentList(
+                        incidents: sampleIncidents,
+                        selectedFilter: "All",
+                        onFilterChanged: (filter) {
+                          print("Filter changed to: $filter");
+                        },
+                      ),
+                    ),
+                  ),
+                  // You can add your next widget here as a sibling to the Expanded above
+                ],
               ),
             ],
           ),
