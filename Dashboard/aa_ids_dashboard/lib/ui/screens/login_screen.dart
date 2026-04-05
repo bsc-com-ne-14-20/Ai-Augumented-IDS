@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '/state/auth_provider.dart';
 import '../custom_widgets/login_card.dart';
 import '../custom_widgets/logo.dart';
+import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,7 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login Successful!')),
       );
-      // TODO: Navigate to the Dashboard screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
     }
   }
 
