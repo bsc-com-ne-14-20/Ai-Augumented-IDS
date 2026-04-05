@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/state/auth_provider.dart';
 import '/ui/screens/login_screen.dart';
-import 'ui/theming/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
