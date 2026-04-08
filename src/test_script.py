@@ -52,7 +52,8 @@ plt.title('Confusion Matrix')
 plt.ylabel('Actual')
 plt.xlabel('Predicted')
 plt.tight_layout()
-plt.show()
+plt.savefig('confusion_matrix.png')
+plt.close()
 
 print("\nAccuracy Score:", accuracy_score(df['label'], df['predicted_label']))
 
