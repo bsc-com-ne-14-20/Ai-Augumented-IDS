@@ -1,0 +1,13 @@
+# Raw data — too large, download from Kaggle
+data/raw/
+
+# Duplicate/intermediate cleaned files
+data/processed/
+data/cleaned/csic_cleaned.csv
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
