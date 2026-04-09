@@ -14,17 +14,17 @@
 
 
 
-A dataset is a structured collection of related data organised in a 
+A dataset is a structured collection of related data organised in a
 
-consistent format for analysis and processing. In the context of 
+consistent format for analysis and processing. In the context of
 
-machine learning and intrusion detection, a dataset serves as the 
+machine learning and intrusion detection, a dataset serves as the
 
-foundation for training, validating and evaluating detection models. 
+foundation for training, validating and evaluating detection models.
 
-It contains labelled or unlabeled examples that represent real or 
+It contains labelled or unlabeled examples that represent real or
 
-simulated behaviour, enabling models to learn patterns that distinguish 
+simulated behaviour, enabling models to learn patterns that distinguish
 
 normal activity from malicious activity.
 
@@ -40,9 +40,9 @@ normal activity from malicious activity.
 
 \### Primary Dataset
 
-The primary dataset used is the HTTP Dataset CSIC 2010, developed by 
+The primary dataset used is the HTTP Dataset CSIC 2010, developed by
 
-the Information Security Institute of the Spanish National Research 
+the Information Security Institute of the Spanish National Research
 
 Council (CSIC). It was obtained from Kaggle at:
 
@@ -54,19 +54,31 @@ https://www.kaggle.com/datasets/ispangler/csic-2010-web-application-attacks
 
 \### Validation Dataset
 
-For cross-dataset validation our system will additionally be evaluated 
+For cross-dataset validation our system will additionally be evaluated
 
-using the CICIDS 2017 dataset developed by the Canadian Institute for 
+using the CICIDS 2017 dataset developed by the Canadian Institute for
 
 Cybersecurity, available at:
 
 
 
+Primary source: Canadian Institute for Cybersecurity
+
 https://www.unb.ca/cic/datasets/ids-2017.html
 
 
 
-Both datasets were automatically generated in controlled environments 
+Downloaded from Kaggle at:
+
+https://www.kaggle.com/datasets/chethuhn/network-intrusion-dataset
+
+File used: Thursday-WorkingHours-Morning-WebAttacks.pcap\_ISCX.csv
+
+
+
+
+
+Both datasets were automatically generated in controlled environments
 
 and are among the most widely cited datasets in cybersecurity research.
 
@@ -84,9 +96,9 @@ and are among the most widely cited datasets in cybersecurity research.
 
 
 
-The CSIC 2010 HTTP Dataset contains automatically generated HTTP 
+The CSIC 2010 HTTP Dataset contains automatically generated HTTP
 
-traffic targeted at an e-commerce web application. 
+traffic targeted at an e-commerce web application.
 
 
 
