@@ -13,3 +13,4 @@ __pycache__/
 *.pyc
 
 venv/
+aa_ids_backend/.venv/
