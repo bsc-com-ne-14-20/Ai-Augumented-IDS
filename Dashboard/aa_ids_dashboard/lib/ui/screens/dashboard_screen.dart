@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../custom_widgets/dashboard_metric_card.dart';
 import '../custom_widgets/incident_list.dart';
 import '../custom_widgets/incident_detail_panel.dart';
+import '../custom_widgets/app_bar.dart';
 import '/models/dashboard_models.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -78,6 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F14),
+      appBar: const CustomAppBar(),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
