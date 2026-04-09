@@ -1,0 +1,46 @@
+[build]
+  # Build command for Flutter web app
+  # Downloads Flutter SDK and builds the web app
+  command = """
+  git clone https://github.com/flutter/flutter.git --branch stable --depth 1 flutter && \
+  export PATH=$PATH:$(pwd)/flutter/bin && \
+  flutter pub get && \
+  flutter build web --release
+  """
+  
+  # Directory containing the built files
+  publish = "build/web"
+
+[build.environment]
+  # Set Node version if needed for any web dependencies
+  NODE_VERSION = "18.16.0"
+  
+  # Optional: Set Dart/Flutter specific variables
+  DART_DEFINE = "FLUTTER_WEB=true"
+
+# Redirect all routes to index.html for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Cache settings for optimal performance
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/main.dart.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
