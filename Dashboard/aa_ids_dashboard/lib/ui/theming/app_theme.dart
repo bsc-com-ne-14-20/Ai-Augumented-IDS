@@ -32,7 +32,7 @@ class AppTheme {
       ),
 
       // 🔹 Card Theme (important for dashboard panels)
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 2,
         shape: RoundedRectangleBorder(
