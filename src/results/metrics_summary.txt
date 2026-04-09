@@ -1,0 +1,28 @@
+══════════════════════════════════════════════════════════
+  OWASP CRS ENGINE — EVALUATION RESULTS
+  Threshold = 5
+══════════════════════════════════════════════════════════
+  True  Negatives (TN) :    6,208
+  False Positives (FP) :      992   ← false alarms
+  False Negatives (FN) :    2,356   ← missed attacks
+  True  Positives (TP) :    2,657
+──────────────────────────────────────────────────────────
+  Accuracy             : 0.7259
+  Precision            : 0.7281
+  Recall  (TPR)        : 0.5300
+  F1 Score             : 0.6135
+  False Positive Rate  : 0.1378
+  False Negative Rate  : 0.4700  ← lower is better
+──────────────────────────────────────────────────────────
+
+  Per-Class Classification Report:
+              precision    recall  f1-score   support
+
+  Normal (0)     0.7249    0.8622    0.7876      7200
+  Attack (1)     0.7281    0.5300    0.6135      5013
+
+    accuracy                         0.7259     12213
+   macro avg     0.7265    0.6961    0.7006     12213
+weighted avg     0.7262    0.7259    0.7161     12213
+
+══════════════════════════════════════════════════════════
