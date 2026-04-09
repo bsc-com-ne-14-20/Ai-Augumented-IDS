@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import '../custom_widgets/dashboard_metric_card.dart';
 import '../custom_widgets/incident_list.dart';
+import '../custom_widgets/incident_detail_panel.dart';
 import '/models/dashboard_models.dart';
 
-final List<Incident> sampleIncidents = [
-                Incident(id: "INC-0047", time: "14:31", endpoint: "/api/login", method: "POST", threat: "High", status: "Open"),
-                Incident(id: "INC-0046", time: "14:28", endpoint: "/admin/cfg", method: "GET", threat: "High", status: "Open"),
-                Incident(id: "INC-0045", time: "14:22", endpoint: "/api/users", method: "POST", threat: "Medium", status: "Open"),
-                // ... add more
-              ];
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -17,56 +12,129 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  Incident? _selectedIncident;
+
+  // Sample data
+  final List<Incident> sampleIncidents = [
+    Incident(
+      id: "INC-0047",
+      time: "14:31",
+      endpoint: "/api/login",
+      method: "POST",
+      threat: "High",
+      status: "Open",
+      name: "SQL Injection Attempt",
+      score: 0.94,
+      sourceIp: "192.168.4.77",
+      detector: "ML Model",
+      alertMessage: "Malicious SQLi payload in POST body at web server ingress",
+      httpRequest: "POST /api/login HTTP/1.1\nHost: target.app.internal\nContent-Type: application/x-www-form-urlencoded\n\nusername=admin' OR '1'='1&password=test",
+    ),
+    Incident(
+      id: "INC-0046",
+      time: "14:28",
+      endpoint: "/admin/cfg",
+      method: "GET",
+      threat: "High",
+      status: "Open",
+      name: "Path Traversal Attempt",
+      score: 0.88,
+      sourceIp: "10.10.5.22",
+      detector: "Signature",
+      alertMessage: "Directory traversal pattern detected in request URI",
+      httpRequest: "GET /admin/cfg/../../../etc/passwd HTTP/1.1\nHost: target.app.internal",
+    ),
+    Incident(
+      id: "INC-0045",
+      time: "14:22",
+      endpoint: "/api/users",
+      method: "POST",
+      threat: "Med",
+      status: "Open",
+      name: "Brute Force Login",
+      score: 0.71,
+      sourceIp: "203.0.113.9",
+      detector: "ML Model",
+      alertMessage: "847 failed login attempts from single IP in 60 seconds",
+      httpRequest: "POST /api/users HTTP/1.1\nHost: target.app.internal",
+    ),
+    Incident(
+      id: "INC-0044",
+      time: "14:17",
+      endpoint: "/search",
+      method: "GET",
+      threat: "Med",
+      status: "Open",
+      name: "XSS Payload Detected",
+      score: 0.67,
+      sourceIp: "172.16.0.88",
+      detector: "Signature",
+      alertMessage: "Reflected XSS vector in query string parameter",
+      httpRequest: "GET /search?q=<script>alert(1)</script> HTTP/1.1",
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFF0B0F14),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Row of Metric Cards
+              // ==================== METRIC CARDS ====================
+              const Text(
+                "OVERVIEW",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF6E7681),
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 12),
+
               Row(
                 children: [
                   Expanded(
                     child: DashboardMetricCard(
-                      title: "Total Traffic",
-                      value: "2.4 GB",
-                      badgeText: "Live",
-                      subtitle: "Total network throughput",
-                      accentColor: Colors.blueAccent,
+                      title: "TOTAL INCIDENTS",
+                      value: "47",
+                      badgeText: "+6 today",
+                      subtitle: "since last shift",
+                      accentColor: const Color(0xFF79C0FF),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: DashboardMetricCard(
-                      title: "Security Alerts",
-                      value: "14",
-                      badgeText: "High",
-                      subtitle: "Requires immediate attention",
-                      accentColor: Colors.redAccent,
+                      title: "ACTIVE THREATS",
+                      value: "12",
+                      badgeText: "3 critical",
+                      subtitle: "require attention",
+                      accentColor: const Color(0xFFFF7B72),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: DashboardMetricCard(
-                      title: "AI Detections",
-                      value: "158",
-                      badgeText: "+12%",
-                      subtitle: "Anomalies identified",
-                      accentColor: Colors.orangeAccent,
+                      title: "REQUESTS PROCESSED",
+                      value: "84.2k",
+                      badgeText: "+1.2k/min",
+                      subtitle: "current rate",
+                      accentColor: const Color(0xFFE3B341),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: DashboardMetricCard(
-                      title: "System Uptime",
-                      value: "99.9%",
-                      badgeText: "Optimal",
-                      subtitle: "Continuous monitoring active",
-                      accentColor: Colors.greenAccent,
+                      title: "RESOLVED TODAY",
+                      value: "35",
+                      badgeText: "74.5%",
+                      subtitle: "resolution rate",
+                      accentColor: const Color(0xFF56D364),
                     ),
                   ),
                 ],
@@ -74,31 +142,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: 32),
 
-              // Placeholder for future dashboard sections
-              Text(
-                "Network Activity Overview",
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
-              ),
-
-              const SizedBox(height: 32),
-
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 500, // Providing a fixed height for the scrollable list
+              // ==================== MAIN CONTENT: LIST + DETAIL ====================
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Incident List (Left - takes more space)
+                    Expanded(
+                      flex: 7,
                       child: IncidentList(
                         incidents: sampleIncidents,
-                        selectedFilter: "All",
-                        onFilterChanged: (filter) {
-                          print("Filter changed to: $filter");
+                        onIncidentSelected: (incident) {
+                          setState(() {
+                            _selectedIncident = incident;
+                          });
                         },
                       ),
                     ),
-                  ),
-                  // You can add your next widget here as a sibling to the Expanded above
-                ],
+
+                    const SizedBox(width: 16),
+
+                    // Detail Panel (Right)
+                    Expanded(
+                      flex: 5,
+                      child: IncidentDetailPanel(
+                        incident: _selectedIncident,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
