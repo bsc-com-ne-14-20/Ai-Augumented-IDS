@@ -36,7 +36,7 @@ class IncidentDetailPanel extends StatelessWidget {
 
   Widget _buildEmptyState() {
     return Container(
-      height: 420, // You can adjust or make it Expanded in parent
+      height: 420,
       decoration: BoxDecoration(
         color: const Color(0xFF0F1419),
         borderRadius: BorderRadius.circular(10),
@@ -173,6 +173,7 @@ class IncidentDetailPanel extends StatelessWidget {
                   _detailField("Source IP", inc.sourceIp),
                   _detailField("Destination", inc.endpoint),
                   _detailField("Timestamp", "2025-04-08 ${inc.time}"),
+                  _detailField("Detector", inc.detector),
                 ],
               ),
             ),
