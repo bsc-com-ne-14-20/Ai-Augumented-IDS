@@ -47,14 +47,15 @@ def parse_csv(file_stream) -> tuple[list[dict], list[str]]:
     # file_stream might be text (StringIO) or bytes (BytesIO/FileStorage)
     content = file_stream.read()
     if isinstance(content, bytes):
-        encoding_info = chardet.detect(content)
-        encoding = encoding_info.get("encoding", "utf-8")
-        if not encoding:
-            encoding = "utf-8"
         try:
-            content_str = content.decode(encoding)
-        except Exception as e:
-            raise ValueError(f"Failed to decode CSV: {e}")
+            content_str = content.decode("utf-8")
+        except UnicodeDecodeError:
+            encoding_info = chardet.detect(content)
+            encoding = encoding_info.get("encoding", "utf-8") or "utf-8"
+            try:
+                content_str = content.decode(encoding)
+            except Exception:
+                content_str = content.decode("utf-8", errors="replace")
     else:
         content_str = content
         
@@ -65,11 +66,36 @@ def parse_csv(file_stream) -> tuple[list[dict], list[str]]:
     except Exception as e:
         raise ValueError(f"Invalid CSV format: {e}")
 
+    # Column Mapping for common datasets
+    col_map = {}
+    cols = df.columns.tolist()
+    if 'url_path' in cols and 'path' not in cols:
+        col_map['url_path'] = 'path'
+    if 'status' in cols and 'response_code' not in cols:
+        col_map['status'] = 'response_code'
+    if col_map:
+        df.rename(columns=col_map, inplace=True)
+        
+    # Inject defaults for missing expected columns
+    if 'path' in df.columns and 'url' not in df.columns:
+        df['url'] = df['path']
+    if 'response_code' not in df.columns:
+        df['response_code'] = '200'
+    if 'content_length' not in df.columns:
+        df['content_length'] = '0'
+    if 'query_string' not in df.columns:
+        df['query_string'] = ''
+    if 'body' not in df.columns:
+        df['body'] = ''
+    if 'method' not in df.columns:
+        df['method'] = 'GET'
+
     validate_csv_columns(df.columns.tolist())
     
     max_rows = config.MAX_CSV_ROWS
     if len(df) > max_rows:
-        raise ValueError(f"Dataset size ({len(df)} rows) exceeds maximum allowed ({max_rows})")
+        warnings.append(f"Dataset size ({len(df)} rows) exceeded max allowed ({max_rows}). Truncating to {max_rows} rows.")
+        df = df.head(max_rows)
 
     rows = []
     for idx, row in df.iterrows():

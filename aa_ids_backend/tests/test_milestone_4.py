@@ -28,11 +28,14 @@ def test_nan_body_becomes_empty_string():
     rows, _ = parse_csv(io.StringIO(csv_data))
     assert rows[0]["body"] == ""
 
-def test_max_rows_exceeded_raises():
+def test_max_rows_exceeded_truncates():
     header = "method,url,path,query_string,body,response_code,content_length\n"
     rows_data = "GET,http://x.com/,/,,,200,0\n" * 10001
-    with pytest.raises(ValueError, match="exceeds maximum"):
-        parse_csv(io.StringIO(header + rows_data))
+    rows, warnings = parse_csv(io.StringIO(header + rows_data))
+    import config
+    assert len(rows) == config.MAX_CSV_ROWS
+    assert len(warnings) >= 1
+    assert "Truncating" in warnings[0]
 
 def test_invalid_response_code_row_skipped_with_warning():
     csv_data = "method,url,path,query_string,body,response_code,content_length\nGET,http://x.com/,/,,,999,0\nGET,http://x.com/home,/home,,,200,0"
