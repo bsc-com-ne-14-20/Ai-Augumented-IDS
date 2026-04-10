@@ -2,6 +2,7 @@ import io
 import json
 import logging
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import pandas as pd
 import chardet
@@ -77,8 +78,15 @@ def parse_csv(file_stream) -> tuple[list[dict], list[str]]:
         df.rename(columns=col_map, inplace=True)
         
     # Inject defaults for missing expected columns
-    if 'path' in df.columns and 'url' not in df.columns:
+    # Handle url and path - ensure both exist
+    if 'url' not in df.columns and 'path' in df.columns:
+        # If only path exists, use it as url
         df['url'] = df['path']
+    elif 'path' not in df.columns and 'url' in df.columns:
+        # If only url exists, extract path from it
+        df['path'] = df['url'].apply(lambda u: urlparse(str(u)).path if str(u).strip() else '/')
+    # Note: If NEITHER url nor path exists, we don't create them - let validation catch it
+        
     if 'response_code' not in df.columns:
         df['response_code'] = '200'
     if 'content_length' not in df.columns:
