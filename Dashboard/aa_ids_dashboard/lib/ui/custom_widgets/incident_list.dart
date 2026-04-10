@@ -18,9 +18,20 @@ class IncidentList extends StatefulWidget {
 }
 
 class _IncidentListState extends State<IncidentList> {
-  String _selectedFilter = "All";
+  String _selectedFilter = 'All';
+  String? _selectedId;
 
-  Color _getThreatColor(String threat) {
+  // Local override map: incidentId → reviewedStatus.
+  // Status changes are written here immediately so the UI updates
+  // in the same frame, independent of the parent rebuild cycle.
+  final Map<String, String> _statusOverrides = {};
+
+  // Returns the locally-overridden status, or falls back to the
+  // value stored in the Incident model itself.
+  String _reviewedStatus(Incident inc) =>
+      _statusOverrides[inc.id] ?? inc.reviewedStatus;
+
+  Color _threatColor(String threat) {
     switch (threat.toLowerCase()) {
       case 'high':
         return const Color(0xFFFF7B72);
@@ -30,19 +41,51 @@ class _IncidentListState extends State<IncidentList> {
       case 'low':
         return const Color(0xFF56D364);
       default:
-        return Colors.grey;
+        return const Color(0xFF8B949E);
     }
+  }
+
+  List<Incident> get _filtered {
+    return widget.incidents.where((inc) {
+      switch (_selectedFilter) {
+        case 'High':
+          return inc.threat.toLowerCase() == 'high';
+        case 'Medium':
+          return inc.threat.toLowerCase() == 'med' ||
+              inc.threat.toLowerCase() == 'medium';
+        case 'Unreviewed':
+          // Use the local override so a just-reviewed row disappears
+          // immediately without waiting for the parent rebuild.
+          return _reviewedStatus(inc).toLowerCase() == 'pending';
+        default:
+          return true;
+      }
+    }).toList();
+  }
+
+  void _onTap(Incident inc) {
+    final status = _reviewedStatus(inc);
+    Incident resolved = inc;
+
+    if (status.toLowerCase() == 'pending') {
+      // Apply locally first — this frame, not the next.
+      setState(() {
+        _statusOverrides[inc.id] = 'Yes';
+        _selectedId = inc.id;
+      });
+      resolved = inc.copyWith(reviewedStatus: 'Yes');
+      // Notify parent to keep master list in sync.
+      widget.onIncidentStatusUpdated?.call(resolved);
+    } else {
+      setState(() => _selectedId = inc.id);
+    }
+
+    widget.onIncidentSelected?.call(resolved);
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredIncidents = widget.incidents.where((inc) {
-      if (_selectedFilter == "All") return true;
-      if (_selectedFilter == "High") return inc.threat.toLowerCase() == "high";
-      if (_selectedFilter == "Medium") return inc.threat.toLowerCase() == "med";
-      if (_selectedFilter == "Unreviewed") return inc.reviewedStatus.toLowerCase() == "pending";
-      return true;
-    }).toList();
+    final rows = _filtered;
 
     return Container(
       decoration: BoxDecoration(
@@ -59,7 +102,7 @@ class _IncidentListState extends State<IncidentList> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "INCIDENT LOG",
+                  'INCIDENT LOG',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
@@ -67,28 +110,37 @@ class _IncidentListState extends State<IncidentList> {
                     letterSpacing: 0.8,
                   ),
                 ),
-                // Filters
                 Row(
-                  children: ["All", "High", "Medium", "Unreviewed"].map((filter) {
-                    final isActive = _selectedFilter == filter;
+                  children: ['All', 'High', 'Medium', 'Unreviewed']
+                      .map((f) {
+                    final active = _selectedFilter == f;
                     return GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = filter),
+                      onTap: () => setState(() => _selectedFilter = f),
                       child: Container(
                         margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isActive ? const Color(0xFF0C1A30) : const Color(0xFF1A2230),
+                          color: active
+                              ? const Color(0xFF0C1A30)
+                              : const Color(0xFF1A2230),
                           border: Border.all(
-                            color: isActive ? const Color(0xFF58A6FF) : const Color(0xFF263040),
+                            color: active
+                                ? const Color(0xFF58A6FF)
+                                : const Color(0xFF263040),
                           ),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          filter,
+                          f,
                           style: TextStyle(
                             fontSize: 11,
-                            color: isActive ? const Color(0xFF58A6FF) : const Color(0xFF6E7681),
-                            fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
+                            color: active
+                                ? const Color(0xFF58A6FF)
+                                : const Color(0xFF6E7681),
+                            fontWeight: active
+                                ? FontWeight.w500
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -101,159 +153,198 @@ class _IncidentListState extends State<IncidentList> {
 
           const Divider(height: 1, color: Color(0xFF1E2530)),
 
-          // Table Header
+          // Column headers
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 10),
             color: const Color(0xFF111820),
             child: const Row(
               children: [
-                Expanded(flex: 2, child: Text("ID", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
-                Expanded(flex: 2, child: Text("TIME", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
-                Expanded(flex: 4, child: Text("ENDPOINT", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
-                Expanded(flex: 2, child: Text("METHOD", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
-                Expanded(flex: 3, child: Text("THREAT", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
-                Expanded(flex: 3, child: Text("REVIEWED", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
+                Expanded(flex: 2, child: _ColHeader('ID')),
+                Expanded(flex: 2, child: _ColHeader('TIME')),
+                Expanded(flex: 4, child: _ColHeader('ENDPOINT')),
+                Expanded(flex: 2, child: _ColHeader('METHOD')),
+                Expanded(flex: 3, child: _ColHeader('THREAT')),
+                Expanded(flex: 3, child: _ColHeader('REVIEWED')),
               ],
             ),
           ),
 
-          // Table Body
+          // Rows
           Expanded(
-            child: ListView.builder(
-              itemCount: filteredIncidents.length,
-              itemBuilder: (context, index) {
-                final inc = filteredIncidents[index];
-                final accent = _getThreatColor(inc.threat);
-                final isReviewed = inc.reviewedStatus.toLowerCase() == "yes";
-                final statusColor = isReviewed
-                    ? const Color(0xFF4ADE80)
-                    : const Color(0xFFFFC107);
+            child: rows.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No incidents match this filter',
+                      style: TextStyle(
+                          color: Color(0xFF4E5966), fontSize: 12),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: rows.length,
+                    itemBuilder: (context, index) {
+                      if (index < 0 || index >= rows.length) {
+                        return const SizedBox.shrink();
+                      }
+                      final inc = rows[index];
+                      final accent = _threatColor(inc.threat);
+                      final status = _reviewedStatus(inc);
+                      final reviewed = status.toLowerCase() == 'yes';
+                      final statusColor = reviewed
+                          ? const Color(0xFF4ADE80)
+                          : const Color(0xFFFFC107);
+                      final isSelected = _selectedId == inc.id;
 
-                return InkWell(
-                  onTap: () {
-                    // Update the reviewed status to "Yes" if it was "Pending"
-                    if (inc.reviewedStatus.toLowerCase() == "pending") {
-                      final updatedIncident = inc.copyWith(reviewedStatus: "Yes");
-                      widget.onIncidentStatusUpdated?.call(updatedIncident);
-                    }
-                    // Select the incident
-                    widget.onIncidentSelected?.call(inc);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                    decoration: const BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Color(0xFF1A2230))),
-                    ),
-                    child: Row(
-                      children: [
-                        // ID
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            inc.id,
-                            style: const TextStyle(
-                              fontFamily: 'Courier New',
-                              fontSize: 12.5,
-                              color: Color(0xFF6E7681),
+                      return InkWell(
+                        onTap: () => _onTap(inc),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 11),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF0C1A30)
+                                : Colors.transparent,
+                            border: Border(
+                              left: isSelected
+                                  ? const BorderSide(
+                                      color: Color(0xFF58A6FF),
+                                      width: 2)
+                                  : BorderSide.none,
+                              bottom: const BorderSide(
+                                  color: Color(0xFF1A2230)),
                             ),
                           ),
-                        ),
-                        // Time
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            inc.time,
-                            style: const TextStyle(fontSize: 12.5, color: Color(0xFF4E5966)),
-                          ),
-                        ),
-                        // Endpoint
-                        Expanded(
-                          flex: 4,
-                          child: Text(
-                            inc.endpoint,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12.5, color: Color(0xFFC9D1D9)),
-                          ),
-                        ),
-                        // Method
-                        Expanded(
-                          flex: 2,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1A2230),
-                                border: Border.all(color: const Color(0xFF263040)),
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                              child: Text(
-                                inc.method,
-                                style: const TextStyle(
-                                  fontFamily: 'Courier New',
-                                  fontSize: 11,
-                                  color: Color(0xFF79C0FF),
-                                  fontWeight: FontWeight.w500,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  inc.id,
+                                  style: const TextStyle(
+                                    fontFamily: 'Courier New',
+                                    fontSize: 12,
+                                    color: Color(0xFF6E7681),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                        // Threat
-                        Expanded(
-                          flex: 3,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                              decoration: BoxDecoration(
-                                color: accent.withOpacity(0.15),
-                                border: Border.all(color: accent.withOpacity(0.4)),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                inc.threat == 'Med' ? 'Medium' : inc.threat,
-                                style: TextStyle(
-                                  color: accent,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  inc.time,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF4E5966)),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
-                        // Reviewed (New Column)
-                        Expanded(
-                          flex: 3,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                              decoration: BoxDecoration(
-                                color: statusColor.withOpacity(0.15),
-                                border: Border.all(color: statusColor.withOpacity(0.4)),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                inc.reviewedStatus,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: statusColor,
+                              Expanded(
+                                flex: 4,
+                                child: Text(
+                                  inc.endpoint,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFFC9D1D9)),
                                 ),
                               ),
-                            ),
+                              Expanded(
+                                flex: 2,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _Chip(
+                                    label: inc.method,
+                                    fg: const Color(0xFF79C0FF),
+                                    bg: const Color(0xFF1A2230),
+                                    border: const Color(0xFF263040),
+                                    mono: true,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _Chip(
+                                    label: inc.threat == 'Med'
+                                        ? 'Medium'
+                                        : inc.threat,
+                                    fg: accent,
+                                    bg: accent.withOpacity(0.15),
+                                    border: accent.withOpacity(0.4),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _Chip(
+                                    label: status,
+                                    fg: statusColor,
+                                    bg: statusColor.withOpacity(0.15),
+                                    border:
+                                        statusColor.withOpacity(0.4),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
     );
   }
+}
+
+class _ColHeader extends StatelessWidget {
+  final String label;
+  const _ColHeader(this.label);
+
+  @override
+  Widget build(BuildContext context) => Text(
+        label,
+        style: const TextStyle(
+          fontSize: 10,
+          color: Color(0xFF4E5966),
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.5,
+        ),
+      );
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final Color fg, bg, border;
+  final bool mono;
+
+  const _Chip({
+    required this.label,
+    required this.fg,
+    required this.bg,
+    required this.border,
+    this.mono = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: bg,
+          border: Border.all(color: border),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: fg,
+            fontFamily: mono ? 'Courier New' : null,
+          ),
+        ),
+      );
 }
