@@ -1,4 +1,4 @@
 pandas
-sklearn.metrics
+scikit-learn
 seaborn
 matplotlib
