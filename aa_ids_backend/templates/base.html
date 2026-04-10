@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AA-IDS — Hybrid Intrusion Detection System</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>AA-IDS</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active">Dashboard</a>
+            <a href="#" class="nav-item" id="nav-upload">Upload</a>
+            <a href="#" class="nav-item">About</a>
+        </nav>
+    </div>
+    
+    <div class="main-content">
+        <header class="topbar">
+            <h1>AA-IDS — Hybrid Intrusion Detection System</h1>
+            <div class="status-indicator">
+                <span class="dot green"></span> Ready
+            </div>
+        </header>
+
+        <main class="content-area">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/upload.js"></script>
+</body>
+</html>

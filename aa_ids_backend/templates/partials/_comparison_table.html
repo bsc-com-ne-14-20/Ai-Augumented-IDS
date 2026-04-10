@@ -1,0 +1,30 @@
+<div class="table-section card">
+    <div class="table-header">
+        <h2>Row-by-Row Comparison</h2>
+        <div class="table-filters">
+            <button class="filter-btn active" data-filter="all" id="btn-filter-all">Show All</button>
+            <button class="filter-btn" data-filter="disagreements" id="btn-filter-disagreements">Disagreements Only</button>
+            <button class="filter-btn" data-filter="attacks" id="btn-filter-attacks">Attacks Only</button>
+        </div>
+    </div>
+    <p id="table-notice" class="table-notice text-muted" style="display: none;">Showing first 500 rows</p>
+    <div class="table-responsive">
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Method</th>
+                    <th>Path</th>
+                    <th>Rule Verdict</th>
+                    <th>Rule Type</th>
+                    <th>ML Verdict</th>
+                    <th>ML Confidence</th>
+                    <th>Agreement</th>
+                </tr>
+            </thead>
+            <tbody id="comparison-table-body">
+                <!-- Javascript will populate rows here -->
+            </tbody>
+        </table>
+    </div>
+</div>

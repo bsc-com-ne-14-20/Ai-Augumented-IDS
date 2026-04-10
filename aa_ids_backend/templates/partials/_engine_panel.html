@@ -1,0 +1,59 @@
+<div class="engine-panel rule-panel card">
+    <h2>Rule Engine</h2>
+    <div class="gauge-container">
+        <div class="gauge" id="rule-detection-gauge"></div>
+        <div class="gauge-label">Detection Rate</div>
+    </div>
+    <div class="chart-row">
+        <div class="chart-container">
+            <h3>Attack Types</h3>
+            <canvas id="rule-attack-type-chart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Severity</h3>
+            <canvas id="rule-severity-chart"></canvas>
+        </div>
+    </div>
+    <div class="lists-row">
+        <div class="list-container">
+            <h3>Top Rules Triggered</h3>
+            <ol id="rule-top-rules-list"></ol>
+        </div>
+        <div class="list-container">
+            <h3>Top Attacked Paths</h3>
+            <ol id="rule-top-paths-list"></ol>
+        </div>
+    </div>
+</div>
+
+<div class="engine-panel ml-panel card">
+    <h2>ML Engine</h2>
+    <div class="gauge-container">
+        <div class="gauge" id="ml-detection-gauge"></div>
+        <div class="gauge-label">Detection Rate</div>
+    </div>
+    <div class="chart-row">
+        <div class="chart-container">
+            <h3>Confidence Histogram</h3>
+            <canvas id="ml-confidence-chart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Severity</h3>
+            <canvas id="ml-severity-chart"></canvas>
+        </div>
+    </div>
+    <div class="lists-row">
+        <div class="list-container">
+            <h3>Confidence Stats</h3>
+            <ul class="stats-list">
+                <li>Mean: <span id="stat-ml-conf-mean"></span></li>
+                <li>Min: <span id="stat-ml-conf-min"></span></li>
+                <li>Max: <span id="stat-ml-conf-max"></span></li>
+            </ul>
+        </div>
+        <div class="list-container">
+            <h3>Top Attacked Paths</h3>
+            <ol id="ml-top-paths-list"></ol>
+        </div>
+    </div>
+</div>

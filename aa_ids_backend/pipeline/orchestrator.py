@@ -191,3 +191,38 @@ def run_pipeline(raw_log_entry: dict[str, Any]) -> dict[str, Any]:
     # ── Clean ─────────────────────────────────────────────────────────────────
     log.info("PIPELINE verdict=CLEAN path=%s", raw_log_entry.get("path"))
     return build_clean_payload(raw_log_entry)
+
+def run_independent_comparison(raw_log_entries: list[dict]) -> dict:
+    """
+    Runs the rule engine and ML model independently on every entry.
+    Neither engine's result affects whether the other runs.
+    Returns a comparison report dict with metrics for each engine separately.
+    """
+    results = []
+    for entry in raw_log_entries:
+        try:
+            features = extract_features(entry)
+        except Exception as e:
+            err_dict = {"verdict": "ERROR", "error": str(e)}
+            results.append({
+                "rule_result": err_dict,
+                "ml_result": err_dict
+            })
+            continue
+
+        try:
+            rule_res = adapt_rule_engine(features)
+        except Exception as e:
+            rule_res = {"verdict": "ERROR", "error": str(e)}
+
+        try:
+            ml_res = adapt_ml_model(features)
+        except Exception as e:
+            ml_res = {"verdict": "ERROR", "error": str(e)}
+
+        results.append({
+            "rule_result": rule_res,
+            "ml_result": ml_res
+        })
+
+    return {"results": results}

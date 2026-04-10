@@ -33,6 +33,7 @@ if str(_HERE) not in sys.path:
 
 import config
 from api.routes import api_bp
+from dashboard.routes import dashboard_bp
 from sockets.events import init_socketio
 
 # ── Logging configuration ─────────────────────────────────────────────────────
@@ -88,6 +89,9 @@ def create_app(config_object: object | None = None) -> Flask:
     # ── Register Blueprint ────────────────────────────────────────────────────
     app.register_blueprint(api_bp, url_prefix="/api/v1")
     log.info("Blueprint 'api' registered at /api/v1")
+
+    app.register_blueprint(dashboard_bp)
+    log.info("Blueprint 'dashboard' registered at /")
 
     log.info(
         "AA-IDS Flask backend ready  |  ML_MODEL_PATH=%s  |  THRESHOLD=%s",
