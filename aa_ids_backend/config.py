@@ -65,7 +65,7 @@ MAX_LOGS_PER_REQUEST: int = int(os.environ.get("MAX_LOGS_PER_REQUEST", "5000"))
 DEFAULT_PAGE_SIZE: int = int(os.environ.get("DEFAULT_PAGE_SIZE", "50"))
 
 # ── Dashboard Constants ───────────────────────────────────────────────────────
-MAX_CSV_ROWS: int = int(os.environ.get("MAX_CSV_ROWS", "10000"))
+MAX_CSV_ROWS: int = int(os.environ.get("MAX_CSV_ROWS", "100000"))
 MAX_CSV_SIZE_MB: int = int(os.environ.get("MAX_CSV_SIZE_MB", "50"))
 UPLOAD_FOLDER: str = os.environ.get("UPLOAD_FOLDER", "/tmp/aa_ids_uploads")
 ROW_DETAILS_CAP: int = int(os.environ.get("ROW_DETAILS_CAP", "500"))
