@@ -4,11 +4,13 @@ import '/models/dashboard_models.dart';
 class IncidentList extends StatefulWidget {
   final List<Incident> incidents;
   final Function(Incident)? onIncidentSelected;
+  final Function(Incident)? onIncidentStatusUpdated;
 
   const IncidentList({
     super.key,
     required this.incidents,
     this.onIncidentSelected,
+    this.onIncidentStatusUpdated,
   });
 
   @override
@@ -38,7 +40,7 @@ class _IncidentListState extends State<IncidentList> {
       if (_selectedFilter == "All") return true;
       if (_selectedFilter == "High") return inc.threat.toLowerCase() == "high";
       if (_selectedFilter == "Medium") return inc.threat.toLowerCase() == "med";
-      if (_selectedFilter == "Open") return inc.status.toLowerCase() == "open";
+      if (_selectedFilter == "Unreviewed") return inc.reviewedStatus.toLowerCase() == "pending";
       return true;
     }).toList();
 
@@ -57,7 +59,7 @@ class _IncidentListState extends State<IncidentList> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "INCIDENT LIST",
+                  "INCIDENT LOG",
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
@@ -67,7 +69,7 @@ class _IncidentListState extends State<IncidentList> {
                 ),
                 // Filters
                 Row(
-                  children: ["All", "High", "Medium", "Open"].map((filter) {
+                  children: ["All", "High", "Medium", "Unreviewed"].map((filter) {
                     final isActive = _selectedFilter == filter;
                     return GestureDetector(
                       onTap: () => setState(() => _selectedFilter = filter),
@@ -110,7 +112,7 @@ class _IncidentListState extends State<IncidentList> {
                 Expanded(flex: 4, child: Text("ENDPOINT", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
                 Expanded(flex: 2, child: Text("METHOD", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
                 Expanded(flex: 3, child: Text("THREAT", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
-                Expanded(flex: 3, child: Text("STATUS", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
+                Expanded(flex: 3, child: Text("REVIEWED", style: TextStyle(fontSize: 10, color: Color(0xFF4E5966), fontWeight: FontWeight.w500))),
               ],
             ),
           ),
@@ -122,9 +124,21 @@ class _IncidentListState extends State<IncidentList> {
               itemBuilder: (context, index) {
                 final inc = filteredIncidents[index];
                 final accent = _getThreatColor(inc.threat);
+                final isReviewed = inc.reviewedStatus.toLowerCase() == "yes";
+                final statusColor = isReviewed
+                    ? const Color(0xFF4ADE80)
+                    : const Color(0xFFFFC107);
 
                 return InkWell(
-                  onTap: () => widget.onIncidentSelected?.call(inc),
+                  onTap: () {
+                    // Update the reviewed status to "Yes" if it was "Pending"
+                    if (inc.reviewedStatus.toLowerCase() == "pending") {
+                      final updatedIncident = inc.copyWith(reviewedStatus: "Yes");
+                      widget.onIncidentStatusUpdated?.call(updatedIncident);
+                    }
+                    // Select the incident
+                    widget.onIncidentSelected?.call(inc);
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                     decoration: const BoxDecoration(
@@ -164,21 +178,23 @@ class _IncidentListState extends State<IncidentList> {
                         // Method
                         Expanded(
                           flex: 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1A2230),
-                              border: Border.all(color: const Color(0xFF263040)),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: Text(
-                              inc.method,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Courier New',
-                                fontSize: 11,
-                                color: Color(0xFF79C0FF),
-                                fontWeight: FontWeight.w500,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1A2230),
+                                border: Border.all(color: const Color(0xFF263040)),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Text(
+                                inc.method,
+                                style: const TextStyle(
+                                  fontFamily: 'Courier New',
+                                  fontSize: 11,
+                                  color: Color(0xFF79C0FF),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
@@ -186,9 +202,10 @@ class _IncidentListState extends State<IncidentList> {
                         // Threat
                         Expanded(
                           flex: 3,
-                          child: Center(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                               decoration: BoxDecoration(
                                 color: accent.withOpacity(0.15),
                                 border: Border.all(color: accent.withOpacity(0.4)),
@@ -205,32 +222,27 @@ class _IncidentListState extends State<IncidentList> {
                             ),
                           ),
                         ),
-                        // Status
+                        // Reviewed (New Column)
                         Expanded(
                           flex: 3,
-                          child: Row(
-                            children: [
-                              Icon(
-                                inc.status.toLowerCase() == "open"
-                                    ? Icons.circle
-                                    : Icons.check_circle,
-                                size: 13,
-                                color: inc.status.toLowerCase() == "open"
-                                    ? const Color(0xFFE3B341)
-                                    : const Color(0xFF56D364),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.15),
+                                border: Border.all(color: statusColor.withOpacity(0.4)),
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                inc.status.toLowerCase() == "open" ? "Open" : "Done",
+                              child: Text(
+                                inc.reviewedStatus,
                                 style: TextStyle(
                                   fontSize: 12.5,
-                                  color: inc.status.toLowerCase() == "open"
-                                      ? const Color(0xFFE3B341)
-                                      : const Color(0xFF56D364),
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
+                                  color: statusColor,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ],
