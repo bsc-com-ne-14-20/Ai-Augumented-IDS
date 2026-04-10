@@ -23,7 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       endpoint: "/api/login",
       method: "POST",
       threat: "High",
-      status: "Open",
+      reviewedStatus: "Pending",
       name: "SQL Injection Attempt",
       score: 0.94,
       sourceIp: "192.168.4.77",
@@ -37,7 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       endpoint: "/admin/cfg",
       method: "GET",
       threat: "High",
-      status: "Open",
+      reviewedStatus: "Pending",
       name: "Path Traversal Attempt",
       score: 0.88,
       sourceIp: "10.10.5.22",
@@ -51,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       endpoint: "/api/users",
       method: "POST",
       threat: "Med",
-      status: "Open",
+      reviewedStatus: "Yes",
       name: "Brute Force Login",
       score: 0.71,
       sourceIp: "203.0.113.9",
@@ -65,13 +65,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
       endpoint: "/search",
       method: "GET",
       threat: "Med",
-      status: "Open",
+      reviewedStatus: "Pending",
       name: "XSS Payload Detected",
       score: 0.67,
       sourceIp: "172.16.0.88",
       detector: "Signature",
       alertMessage: "Reflected XSS vector in query string parameter",
       httpRequest: "GET /search?q=<script>alert(1)</script> HTTP/1.1",
+    ),
+    Incident(
+      id: "INC-0043",
+      time: "14:12",
+      endpoint: "/api/export",
+      method: "POST",
+      threat: "High",
+      reviewedStatus: "Yes",
+      name: "CSRF Token Violation",
+      score: 0.82,
+      sourceIp: "198.51.100.45",
+      detector: "Signature",
+      alertMessage: "Missing or invalid CSRF token in state-changing request",
+      httpRequest: "POST /api/export HTTP/1.1\nHost: target.app.internal\nReferer: target.app.internal\n\nformat=pdf",
+    ),
+    Incident(
+      id: "INC-0042",
+      time: "14:08",
+      endpoint: "/upload",
+      method: "POST",
+      threat: "Low",
+      reviewedStatus: "Yes",
+      name: "Suspicious File Upload",
+      score: 0.45,
+      sourceIp: "192.0.2.12",
+      detector: "ML Model",
+      alertMessage: "File upload with potentially malicious extension detected",
+      httpRequest: "POST /upload HTTP/1.1\nHost: target.app.internal\nContent-Type: multipart/form-data",
     ),
   ];
 
@@ -102,41 +130,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Expanded(
                     child: DashboardMetricCard(
-                      title: "TOTAL INCIDENTS",
+                      title: "TOTAL INCIDENTS LOGGED",
                       value: "47",
-                      badgeText: "+6 today",
-                      subtitle: "since last shift",
-                      accentColor: const Color(0xFF79C0FF),
+                      accentColor: const Color(0xFF4A9EFF),
+                      icon: Icons.list_alt_rounded,
+                      showBottomSection: false,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: DashboardMetricCard(
-                      title: "ACTIVE THREATS",
-                      value: "12",
-                      badgeText: "3 critical",
-                      subtitle: "require attention",
-                      accentColor: const Color(0xFFFF7B72),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DashboardMetricCard(
-                      title: "REQUESTS PROCESSED",
+                      title: "REQUESTS INSPECTED",
                       value: "84.2k",
-                      badgeText: "+1.2k/min",
-                      subtitle: "current rate",
-                      accentColor: const Color(0xFFE3B341),
+                      accentColor: const Color(0xFF9B6BFF),
+                      icon: Icons.article_outlined,
+                      showBottomSection: false,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: DashboardMetricCard(
-                      title: "RESOLVED TODAY",
-                      value: "35",
-                      badgeText: "74.5%",
-                      subtitle: "resolution rate",
-                      accentColor: const Color(0xFF56D364),
+                      title: "DETECTION RATE",
+                      value: "0.056%",
+                      accentColor: const Color(0xFFFFC107),
+                      icon: Icons.insights_rounded,
+                      showBottomSection: false,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DashboardMetricCard(
+                      title: "UNREVIEWED ALERTS",
+                      value: "19",
+                      accentColor: const Color(0xFFFF5C5C),
+                      icon: Icons.warning_amber_rounded,
+                      showBottomSection: false,
                     ),
                   ),
                 ],
@@ -157,6 +185,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onIncidentSelected: (incident) {
                           setState(() {
                             _selectedIncident = incident;
+                          });
+                        },
+                        onIncidentStatusUpdated: (updatedIncident) {
+                          setState(() {
+                            // Find and update the incident in the list
+                            final index = sampleIncidents.indexWhere(
+                              (inc) => inc.id == updatedIncident.id,
+                            );
+                            if (index != -1) {
+                              sampleIncidents[index] = updatedIncident;
+                              // Also update the selected incident if it's the same one
+                              if (_selectedIncident?.id == updatedIncident.id) {
+                                _selectedIncident = updatedIncident;
+                              }
+                            }
                           });
                         },
                       ),

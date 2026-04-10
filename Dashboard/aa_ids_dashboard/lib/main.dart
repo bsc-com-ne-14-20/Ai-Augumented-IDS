@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
         title: 'AA-IDS Dashboard',
         theme: AppTheme.darkTheme,
         home: const LoginScreen(),
+        debugShowCheckedModeBanner: false,
       ),
     );
   }

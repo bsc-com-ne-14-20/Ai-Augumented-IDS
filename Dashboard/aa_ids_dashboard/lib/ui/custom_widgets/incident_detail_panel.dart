@@ -1,5 +1,3 @@
-// lib/widgets/incident_detail_panel.dart
-
 import 'package:flutter/material.dart';
 import '/models/dashboard_models.dart';
 
@@ -175,7 +173,6 @@ class IncidentDetailPanel extends StatelessWidget {
                   _detailField("Source IP", inc.sourceIp),
                   _detailField("Destination", inc.endpoint),
                   _detailField("Timestamp", "2025-04-08 ${inc.time}"),
-                  _detailField("Status", inc.status),
                 ],
               ),
             ),

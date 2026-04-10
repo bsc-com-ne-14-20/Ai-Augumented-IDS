@@ -1,20 +1,20 @@
-
 class Incident {
   final String id;
   final String time;
   final String endpoint;
   final String method;
-  final String threat;        // "High", "Med", "Low"
-  final String status;        // "Open", "Resolved"
-  
-  final String name;          // Incident title / name
-  final double score;         // Anomaly score (0.0 - 1.0)
+  final String threat;           // "High", "Med", "Low"
+  final String reviewedStatus;   // "Yes" or "Pending"  ← Changed/renamed
+
+  // Detail panel fields
+  final String name;
+  final double score;
   final String sourceIp;
-  final String detector;      // e.g., "ML Model", "Signature"
+  final String detector;
   final String alertMessage;
   final String httpRequest;
-  
-  final int flagStep;         // For future network trace (1-5)
+
+  final int flagStep;
 
   Incident({
     required this.id,
@@ -22,7 +22,7 @@ class Incident {
     required this.endpoint,
     required this.method,
     required this.threat,
-    required this.status,
+    required this.reviewedStatus,        // New main field for Reviewed column
     required this.name,
     required this.score,
     required this.sourceIp,
@@ -31,6 +31,39 @@ class Incident {
     required this.httpRequest,
     this.flagStep = 3,
   });
+
+  // Copy constructor to create a modified copy of the incident
+  Incident copyWith({
+    String? id,
+    String? time,
+    String? endpoint,
+    String? method,
+    String? threat,
+    String? reviewedStatus,
+    String? name,
+    double? score,
+    String? sourceIp,
+    String? detector,
+    String? alertMessage,
+    String? httpRequest,
+    int? flagStep,
+  }) {
+    return Incident(
+      id: id ?? this.id,
+      time: time ?? this.time,
+      endpoint: endpoint ?? this.endpoint,
+      method: method ?? this.method,
+      threat: threat ?? this.threat,
+      reviewedStatus: reviewedStatus ?? this.reviewedStatus,
+      name: name ?? this.name,
+      score: score ?? this.score,
+      sourceIp: sourceIp ?? this.sourceIp,
+      detector: detector ?? this.detector,
+      alertMessage: alertMessage ?? this.alertMessage,
+      httpRequest: httpRequest ?? this.httpRequest,
+      flagStep: flagStep ?? this.flagStep,
+    );
+  }
 
   factory Incident.fromJson(Map<String, dynamic> json) {
     double parseScore(dynamic value) {
@@ -46,7 +79,7 @@ class Incident {
       endpoint: json['endpoint']?.toString() ?? '',
       method: json['method']?.toString() ?? '',
       threat: json['threat']?.toString() ?? '',
-      status: json['status']?.toString() ?? '',
+      reviewedStatus: json['reviewedStatus']?.toString() ?? 'Pending',
       name: json['name']?.toString() ?? '',
       score: parseScore(json['score']),
       sourceIp: json['sourceIp']?.toString() ?? '',

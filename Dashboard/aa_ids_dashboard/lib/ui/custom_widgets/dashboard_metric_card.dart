@@ -7,11 +7,11 @@ class DashboardMetricCard extends StatelessWidget {
   final String value;
   final String? badgeText;
   final String? subtitle;
-
   final Color accentColor;
+  final IconData? icon;
 
   final double borderRadius;
-  final EdgeInsets padding;
+  final bool showBottomSection;   // whether to show badge + subtitle
 
   const DashboardMetricCard({
     super.key,
@@ -20,105 +20,111 @@ class DashboardMetricCard extends StatelessWidget {
     this.badgeText,
     this.subtitle,
     required this.accentColor,
-    this.borderRadius = 10.0,
-    this.padding = const EdgeInsets.fromLTRB(22, 20, 22, 20),
+    this.icon,
+    this.borderRadius = 12.0,
+    this.showBottomSection = true,   // Default is true for backward compatibility
   });
-
-  Color _darken(Color color, [double amount = 0.68]) {
-    final hsl = HSLColor.fromColor(color);
-    return hsl.withLightness((hsl.lightness * (1 - amount)).clamp(0.0, 1.0)).toColor();
-  }
-
-  Color _lighten(Color color, [double amount = 0.12]) {
-    final hsl = HSLColor.fromColor(color);
-    return hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0)).toColor();
-  }
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = _darken(accentColor, 0.68);
-    final badgeBackground = _lighten(accentColor, 0.08);
-
     return Container(
-      padding: padding,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: const Color(0xFF0F1419),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-          width: 1,
+          color: accentColor.withOpacity(0.25),
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // Title
-          Text(
-            title.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF8B9EB0),
-              letterSpacing: 0.8,
-            ),
+          // Icon + Title
+          Row(
+            children: [
+              if (icon != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: accentColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF9CA8C0),
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 18),
 
-          // Value
+          // Main Value
           Text(
             value,
             style: TextStyle(
-              fontSize: 42,
+              fontSize: 46,
               fontWeight: FontWeight.w600,
               color: accentColor,
-              height: 1.05,
-              letterSpacing: -0.5,
+              height: 1.0,
+              letterSpacing: -1.2,
             ),
           ),
 
-          const SizedBox(height: 12),
-
-          // Badge + Subtitle Row
-          if (badgeText != null || subtitle != null)
+          // Bottom Section (Badge + Subtitle) - Now Optional
+          if (showBottomSection && (badgeText != null || subtitle != null)) ...[
+            const SizedBox(height: 14),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (badgeText != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: badgeBackground,
-                      borderRadius: BorderRadius.circular(4),
+                      color: accentColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       badgeText!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
+                      style: TextStyle(
+                        color: accentColor,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
                       ),
                     ),
                   ),
-
                 if (badgeText != null && subtitle != null)
-                  const SizedBox(width: 10),
-
+                  const SizedBox(width: 12),
                 if (subtitle != null)
                   Expanded(
                     child: Text(
                       subtitle!,
                       style: const TextStyle(
                         fontSize: 12.5,
-                        color: Color(0xFF6E8AA8),
-                        height: 1.2,
+                        color: Color(0xFF6E7F9E),
                       ),
                     ),
                   ),
               ],
             ),
+          ],
         ],
       ),
     );
