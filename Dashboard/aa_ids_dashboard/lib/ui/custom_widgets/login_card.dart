@@ -16,6 +16,7 @@ class LoginCard extends StatelessWidget {
   final ValueChanged<String>? onUsernameChanged;
   final ValueChanged<String>? onPasswordChanged;
   final bool isLoading;
+  final String? errorMessage;
 
   const LoginCard({
     super.key,
@@ -32,6 +33,7 @@ class LoginCard extends StatelessWidget {
     this.onUsernameChanged,
     this.onPasswordChanged,
     this.isLoading = false,
+    this.errorMessage,
   });
 
   @override
@@ -64,6 +66,42 @@ class LoginCard extends StatelessWidget {
 
             const SizedBox(height: 32),
 
+            // Error Card
+            if (errorMessage != null && errorMessage!.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.highThreat.withOpacity(0.15),
+                  border: Border.all(
+                    color: AppColors.highThreat.withOpacity(0.5),
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.highThreat,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        errorMessage!,
+                        style: const TextStyle(
+                          color: AppColors.highThreat,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            if (errorMessage != null && errorMessage!.isNotEmpty)
+              const SizedBox(height: 24),
+
             // Username Field
             Align(
               alignment: Alignment.centerLeft,
@@ -76,7 +114,7 @@ class LoginCard extends StatelessWidget {
             TextField(
               controller: usernameController,
               onChanged: onUsernameChanged,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration( // uses InputDecorationTheme as defined
                 hintText: usernameHint,
               ),
@@ -97,7 +135,7 @@ class LoginCard extends StatelessWidget {
               controller: passwordController,
               onChanged: onPasswordChanged,
               obscureText: true,
-              style: const TextStyle(color: Colors.white), // Keep explicit white for input text for now
+              style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration( // Leverage InputDecorationTheme
                 hintText: passwordHint,
                 // The rest of the styling (fillColor, border, hintStyle) comes from AppTheme.inputDecorationTheme
@@ -118,7 +156,7 @@ class LoginCard extends StatelessWidget {
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           strokeWidth: 3,
                         ),
                       )

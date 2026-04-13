@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '/models/dashboard_models.dart';
+import '../theming/app_colors.dart';
 
 class IncidentDetailPanel extends StatelessWidget {
   final Incident? incident;
@@ -12,12 +13,12 @@ class IncidentDetailPanel extends StatelessWidget {
   Color _getThreatColor(String threat) {
     switch (threat.toLowerCase()) {
       case 'high':
-        return const Color(0xFFFF7B72);
+        return AppColors.highThreat;
       case 'med':
       case 'medium':
-        return const Color(0xFFE3B341);
+        return AppColors.mediumThreat;
       case 'low':
-        return const Color(0xFF56D364);
+        return AppColors.lowThreat;
       default:
         return Colors.grey;
     }
@@ -38,21 +39,21 @@ class IncidentDetailPanel extends StatelessWidget {
     return Container(
       height: 420,
       decoration: BoxDecoration(
-        color: const Color(0xFF0F1419),
+        color: AppColors.darkCardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF1E2530)),
+        border: Border.all(color: AppColors.borderDark),
       ),
       child: const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.select_all_rounded, size: 52, color: Color(0xFF2A3540)),
+            Icon(Icons.select_all_rounded, size: 52, color: AppColors.textMutedIcon),
             SizedBox(height: 16),
             Text(
               "Select an incident to view details",
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF3A4550),
+                color: AppColors.textMutedSubtle,
                 fontSize: 14,
               ),
             ),
@@ -65,9 +66,9 @@ class IncidentDetailPanel extends StatelessWidget {
   Widget _buildDetailCard(Incident inc, Color accent) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F1419),
+        color: AppColors.darkCardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF1E2530)),
+        border: Border.all(color: AppColors.borderDark),
       ),
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -96,14 +97,14 @@ class IncidentDetailPanel extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0C1A30),
-                      border: Border.all(color: const Color(0xFF1A3558)),
+                      color: AppColors.darkActiveBg,
+                      border: Border.all(color: AppColors.borderBlueLight),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
                       inc.method,
                       style: const TextStyle(
-                        color: Color(0xFF79C0FF),
+                        color: AppColors.accentBlueSoft,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -147,7 +148,7 @@ class IncidentDetailPanel extends StatelessWidget {
                         "ANOMALY SCORE",
                         style: TextStyle(
                           fontSize: 9.2,
-                          color: Color(0xFF4E5966),
+                          color: AppColors.textMutedDark,
                           letterSpacing: 0.6,
                         ),
                       ),
@@ -161,7 +162,7 @@ class IncidentDetailPanel extends StatelessWidget {
             Container(
               decoration: const BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xFF1E2530)),
+                  top: BorderSide(color: AppColors.borderDark),
                 ),
               ),
               child: GridView.count(
@@ -186,7 +187,7 @@ class IncidentDetailPanel extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF4E5966),
+                  color: AppColors.textMutedDark,
                   letterSpacing: 0.7,
                 ),
               ),
@@ -195,9 +196,9 @@ class IncidentDetailPanel extends StatelessWidget {
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFF080C10),
+                color: AppColors.darkVeryLight,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF1A2230)),
+                border: Border.all(color: AppColors.darkSecondaryBg),
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -207,7 +208,7 @@ class IncidentDetailPanel extends StatelessWidget {
                     fontFamily: 'Courier New',
                     fontSize: 12.8,
                     height: 1.65,
-                    color: Color(0xFFC9D1D9),
+                    color: AppColors.textLight,
                   ),
                 ),
               ),
@@ -228,7 +229,7 @@ class IncidentDetailPanel extends StatelessWidget {
             label.toUpperCase(),
             style: const TextStyle(
               fontSize: 9,
-              color: Color(0xFF4E5966),
+              color: AppColors.textMutedDark,
               letterSpacing: 0.6,
             ),
           ),
@@ -237,7 +238,7 @@ class IncidentDetailPanel extends StatelessWidget {
             value,
             style: const TextStyle(
               fontSize: 13.2,
-              color: Color(0xFFC9D1D9),
+              color: AppColors.textLight,
               fontFamily: 'Courier New',
             ),
           ),

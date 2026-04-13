@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../custom_widgets/dashboard_metric_card.dart';
 import '../custom_widgets/incident_list.dart';
 import '../custom_widgets/incident_detail_panel.dart';
 import '../custom_widgets/app_bar.dart';
+import '../theming/app_colors.dart';
 import '/models/dashboard_models.dart';
+import '/state/theme_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,7 +19,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Incident? _selectedIncident;
   late List<Incident> sampleIncidents;
   String? _notificationMessage;
-  Color _notificationColor = const Color(0xFF4ADE80);
+  Color _notificationColor = AppColors.successReviewed;
 
   @override
   void initState() {
@@ -134,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _showNotification(String message, {Color? color}) {
     setState(() {
       _notificationMessage = message;
-      _notificationColor = color ?? const Color(0xFF4ADE80);
+      _notificationColor = color ?? AppColors.successReviewed;
     });
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted) setState(() => _notificationMessage = null);
@@ -148,11 +151,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF0F1419),
+        backgroundColor: AppColors.darkCardBg,
         title: const Text(
           'ADD INCIDENTS FROM CSV',
           style: TextStyle(
-            color: Color(0xFF9CA8C0),
+            color: AppColors.textLabelLight,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -173,7 +176,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 'Note: if your incident name contains a comma,\n'
                 'wrap the whole name in double quotes.',
                 style: TextStyle(
-                  color: Color(0xFF6E7681),
+                  color: AppColors.textLabel,
                   fontSize: 11,
                   height: 1.6,
                 ),
@@ -184,27 +187,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 maxLines: 8,
                 minLines: 4,
                 style: const TextStyle(
-                    color: Color(0xFFC9D1D9), fontSize: 12),
+                    color: AppColors.textLight, fontSize: 12),
                 decoration: InputDecoration(
                   hintText:
                       'Paste CSV rows here (one incident per line)',
                   hintStyle:
-                      const TextStyle(color: Color(0xFF4E5966)),
+                      const TextStyle(color: AppColors.textMutedDark),
                   filled: true,
-                  fillColor: const Color(0xFF080C10),
+                  fillColor: AppColors.darkVeryLight,
                   border: OutlineInputBorder(
                     borderSide:
-                        const BorderSide(color: Color(0xFF1E2530)),
+                        const BorderSide(color: AppColors.borderDark),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderSide:
-                        const BorderSide(color: Color(0xFF1E2530)),
+                        const BorderSide(color: AppColors.borderDark),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderSide:
-                        const BorderSide(color: Color(0xFF4A9EFF)),
+                        const BorderSide(color: AppColors.accentBlueHighlight),
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
@@ -216,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('CANCEL',
-                style: TextStyle(color: Color(0xFF6E7681))),
+                style: TextStyle(color: AppColors.textLabel)),
           ),
           TextButton(
             onPressed: () {
@@ -226,7 +229,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: const Text(
               'ADD INCIDENTS',
               style: TextStyle(
-                  color: Color(0xFF4A9EFF),
+                  color: AppColors.accentBlueHighlight,
                   fontWeight: FontWeight.w600),
             ),
           ),
@@ -353,7 +356,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         sampleIncidents = [...sampleIncidents, ...added];
       });
       _showNotification('Added ${added.length} incident(s)',
-          color: const Color(0xFF4ADE80));
+          color: AppColors.successReviewed);
     } else {
       final parts = <String>[];
       if (duplicateCount > 0) {
@@ -364,7 +367,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
       final detail = parts.isNotEmpty ? '\n${parts.join(', ')}' : '';
       _showNotification('No valid incidents found.$detail',
-          color: const Color(0xFFFF7B72));
+          color: AppColors.highThreat);
     }
   }
 
@@ -399,8 +402,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkTheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F14),
+      backgroundColor: isDark ? AppColors.darkVeryLight : AppColors.lightVeryLight,
       appBar: const CustomAppBar(),
       body: Stack(
         children: [
@@ -419,7 +425,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF6E7681),
+                          color: AppColors.textLabel,
                           letterSpacing: 1,
                         ),
                       ),
@@ -429,12 +435,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             size: 18),
                         label: const Text('ADD INCIDENTS (CSV)'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E2A44),
-                          foregroundColor: const Color(0xFF4A9EFF),
+                          backgroundColor: AppColors.darkActiveBg,
+                          foregroundColor: AppColors.accentBlueHighlight,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                             side: const BorderSide(
-                                color: Color(0xFF4A9EFF)),
+                                color: AppColors.accentBlueHighlight),
                           ),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
@@ -563,8 +569,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          _notificationColor ==
-                                  const Color(0xFFFF7B72)
+                          _notificationColor == AppColors.highThreat
                               ? Icons.error_outline
                               : Icons.check_circle_outline,
                           color: _notificationColor,

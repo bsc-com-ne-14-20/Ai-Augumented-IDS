@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theming/app_colors.dart';
 
 class IdsLogo extends StatelessWidget {
   final double size;
@@ -14,14 +15,14 @@ class IdsLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: const BoxDecoration(
-        color: Color(0xFF2196F3), 
+        color: AppColors.primaryBlue, 
         shape: BoxShape.circle,
       ),
       child: Center(
         child: Icon(
           Icons.shield,           // Shield icon 
           size: size * 0.55,
-          color: Colors.white,
+          color: AppColors.textPrimary,
         ),
       ),
     );

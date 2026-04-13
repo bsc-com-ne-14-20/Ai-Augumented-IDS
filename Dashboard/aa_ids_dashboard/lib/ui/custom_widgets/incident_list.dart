@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '/models/dashboard_models.dart';
+import '../theming/app_colors.dart';
+import '/state/theme_provider.dart';
 
 class IncidentList extends StatefulWidget {
   final List<Incident> incidents;
@@ -34,14 +37,14 @@ class _IncidentListState extends State<IncidentList> {
   Color _threatColor(String threat) {
     switch (threat.toLowerCase()) {
       case 'high':
-        return const Color(0xFFFF7B72);
+        return AppColors.highThreat;
       case 'med':
       case 'medium':
-        return const Color(0xFFE3B341);
+        return AppColors.mediumThreat;
       case 'low':
-        return const Color(0xFF56D364);
+        return AppColors.lowThreat;
       default:
-        return const Color(0xFF8B949E);
+        return AppColors.textLabel;
     }
   }
 
@@ -85,13 +88,17 @@ class _IncidentListState extends State<IncidentList> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkTheme;
     final rows = _filtered;
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F1419),
+        color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF1E2530)),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.lightBorderDark,
+        ),
       ),
       child: Column(
         children: [
@@ -101,12 +108,12 @@ class _IncidentListState extends State<IncidentList> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'INCIDENT LOG',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF6E7681),
+                    color: isDark ? AppColors.textLabel : AppColors.lightTextLabel,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -122,12 +129,20 @@ class _IncidentListState extends State<IncidentList> {
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: active
-                              ? const Color(0xFF0C1A30)
-                              : const Color(0xFF1A2230),
+                              ? (isDark
+                                  ? AppColors.darkActiveBg
+                                  : AppColors.lightActiveBg)
+                              : (isDark
+                                  ? AppColors.darkSecondaryBg
+                                  : AppColors.lightSecondaryBg),
                           border: Border.all(
                             color: active
-                                ? const Color(0xFF58A6FF)
-                                : const Color(0xFF263040),
+                                ? (isDark
+                                    ? AppColors.accentBlueHighlight
+                                    : AppColors.lightAccentBlueHighlight)
+                                : (isDark
+                                    ? AppColors.borderSecondary
+                                    : AppColors.lightBorderSecondary),
                           ),
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -136,8 +151,12 @@ class _IncidentListState extends State<IncidentList> {
                           style: TextStyle(
                             fontSize: 11,
                             color: active
-                                ? const Color(0xFF58A6FF)
-                                : const Color(0xFF6E7681),
+                                ? (isDark
+                                    ? AppColors.accentBlueHighlight
+                                    : AppColors.lightAccentBlueHighlight)
+                                : (isDark
+                                    ? AppColors.textLabel
+                                    : AppColors.lightTextLabel),
                             fontWeight: active
                                 ? FontWeight.w500
                                 : FontWeight.normal,
@@ -151,13 +170,16 @@ class _IncidentListState extends State<IncidentList> {
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFF1E2530)),
+          Divider(
+            height: 1,
+            color: isDark ? AppColors.borderDark : AppColors.lightBorderDark,
+          ),
 
           // Column headers
           Container(
             padding: const EdgeInsets.symmetric(
                 horizontal: 16, vertical: 10),
-            color: const Color(0xFF111820),
+            color: isDark ? AppColors.darkHeaderBg : AppColors.lightHeaderBg,
             child: const Row(
               children: [
                 Expanded(flex: 2, child: _ColHeader('ID')),
@@ -173,11 +195,15 @@ class _IncidentListState extends State<IncidentList> {
           // Rows
           Expanded(
             child: rows.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No incidents match this filter',
                       style: TextStyle(
-                          color: Color(0xFF4E5966), fontSize: 12),
+                        color: isDark
+                            ? AppColors.textMutedDark
+                            : AppColors.lightTextMutedDark,
+                        fontSize: 12,
+                      ),
                     ),
                   )
                 : ListView.builder(
@@ -191,8 +217,8 @@ class _IncidentListState extends State<IncidentList> {
                       final status = _reviewedStatus(inc);
                       final reviewed = status.toLowerCase() == 'yes';
                       final statusColor = reviewed
-                          ? const Color(0xFF4ADE80)
-                          : const Color(0xFFFFC107);
+                          ? AppColors.successReviewed
+                          : AppColors.warningPending;
                       final isSelected = _selectedId == inc.id;
 
                       return InkWell(
@@ -202,16 +228,22 @@ class _IncidentListState extends State<IncidentList> {
                               horizontal: 16, vertical: 11),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFF0C1A30)
+                                ? (isDark
+                                    ? AppColors.darkActiveBg
+                                    : AppColors.lightActiveBg)
                                 : Colors.transparent,
                             border: Border(
                               left: isSelected
-                                  ? const BorderSide(
-                                      color: Color(0xFF58A6FF),
+                                  ? BorderSide(
+                                      color: isDark
+                                          ? AppColors.accentBlueHighlight
+                                          : AppColors.lightAccentBlueHighlight,
                                       width: 2)
                                   : BorderSide.none,
-                              bottom: const BorderSide(
-                                  color: Color(0xFF1A2230)),
+                              bottom: BorderSide(
+                                  color: isDark
+                                      ? AppColors.darkSecondaryBg
+                                      : AppColors.lightSecondaryBg),
                             ),
                           ),
                           child: Row(
@@ -220,10 +252,12 @@ class _IncidentListState extends State<IncidentList> {
                                 flex: 2,
                                 child: Text(
                                   inc.id,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Courier New',
                                     fontSize: 12,
-                                    color: Color(0xFF6E7681),
+                                    color: isDark
+                                        ? Color(0xFF6E7681)
+                                        : AppColors.lightTextLabel,
                                   ),
                                 ),
                               ),
@@ -231,9 +265,12 @@ class _IncidentListState extends State<IncidentList> {
                                 flex: 2,
                                 child: Text(
                                   inc.time,
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF4E5966)),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? Color(0xFF4E5966)
+                                        : AppColors.lightTextLabel,
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -241,9 +278,12 @@ class _IncidentListState extends State<IncidentList> {
                                 child: Text(
                                   inc.endpoint,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFFC9D1D9)),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? Color(0xFFC9D1D9)
+                                        : AppColors.lightTextLabel,
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -252,9 +292,9 @@ class _IncidentListState extends State<IncidentList> {
                                   alignment: Alignment.centerLeft,
                                   child: _Chip(
                                     label: inc.method,
-                                    fg: const Color(0xFF79C0FF),
-                                    bg: const Color(0xFF1A2230),
-                                    border: const Color(0xFF263040),
+                                    fg: AppColors.accentBlueSoft,
+                                    bg: AppColors.darkSecondaryBg,
+                                    border: AppColors.borderSecondary,
                                     mono: true,
                                   ),
                                 ),
@@ -308,7 +348,7 @@ class _ColHeader extends StatelessWidget {
         label,
         style: const TextStyle(
           fontSize: 10,
-          color: Color(0xFF4E5966),
+          color: AppColors.textMutedDark,
           fontWeight: FontWeight.w500,
           letterSpacing: 0.5,
         ),
