@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../theming/app_colors.dart';
+import 'theme_toggle_button.dart';
+import '/state/theme_provider.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -21,13 +25,19 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkTheme;
+
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F1419),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
         border: Border(
-          bottom: BorderSide(color: Color(0xFF1E2530), width: 1),
+          bottom: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.lightBorderDark,
+            width: 1,
+          ),
         ),
       ),
       child: Row(
@@ -40,11 +50,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 width: 7,
                 height: 7,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3FB950),
+                  color: AppColors.successOnline,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF3FB950).withOpacity(0.6),
+                      color: AppColors.successOnline.withOpacity(0.6),
                       blurRadius: 6,
                       spreadRadius: 1,
                     ),
@@ -56,19 +66,22 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               // Title
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF58A6FF),
+                  color: isDark
+                      ? AppColors.accentBlueHighlight
+                      : AppColors.lightAccentBlueHighlight,
                   letterSpacing: 0.3,
                 ),
               ),
 
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 "|",
                 style: TextStyle(
-                  color: Color(0xFF1E2530),
+                  color:
+                      isDark ? AppColors.borderDark : AppColors.lightBorderDark,
                   fontWeight: FontWeight.w300,
                 ),
               ),
@@ -77,9 +90,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               // Subtitle
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
-                  color: Color(0xFF4E5966),
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : AppColors.lightTextMutedDark,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -95,8 +110,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B1F10),
-                  border: Border.all(color: const Color(0xFF1A4228)),
+                  color: isDark
+                      ? AppColors.threatHighBg
+                      : AppColors.lightThreatHighBg,
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.threatHighBorder
+                        : AppColors.lightThreatHighBorder,
+                  ),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Row(
@@ -105,7 +126,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       width: 6,
                       height: 6,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF3FB950),
+                        color: AppColors.successOnline,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -114,7 +135,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       systemStatusText,
                       style: const TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF3FB950),
+                        color: AppColors.successOnline,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -126,6 +147,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
               // Live Clock
               const _LiveClock(),
+
+              const SizedBox(width: 16),
+
+              // Theme Toggle Button
+              ThemeToggleButton(
+                color: isDark ? AppColors.textLabel : AppColors.lightTextLabel,
+                size: 20,
+              ),
             ],
           ),
         ],
@@ -165,6 +194,9 @@ class _LiveClockState extends State<_LiveClock> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkTheme;
+    
     final String timeString = 
         "${_currentTime.year}-${_currentTime.month.toString().padLeft(2, '0')}-"
         "${_currentTime.day.toString().padLeft(2, '0')} "
@@ -174,9 +206,9 @@ class _LiveClockState extends State<_LiveClock> {
 
     return Text(
       timeString,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
-        color: Color(0xFF6E7681),
+        color: isDark ? AppColors.textLabel : AppColors.lightTextLabel,
         fontFamily: 'Courier New',
       ),
     );

@@ -35,4 +35,14 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = false;
     notifyListeners();
   }
+
+  void setErrorMessage(String message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  void clearErrorMessage() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 }

@@ -1,6 +1,9 @@
 // lib/custom_widgets/dashboard_metric_card.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../theming/app_colors.dart';
+import '/state/theme_provider.dart';
 
 class DashboardMetricCard extends StatelessWidget {
   final String title;
@@ -27,10 +30,13 @@ class DashboardMetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkTheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F1419),
+        color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
           color: accentColor.withOpacity(0.25),
@@ -64,10 +70,12 @@ class DashboardMetricCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF9CA8C0),
+                    color: isDark
+                        ? AppColors.textLabelLight
+                        : AppColors.lightTextLabelLight,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -116,9 +124,11 @@ class DashboardMetricCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       subtitle!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
-                        color: Color(0xFF6E7F9E),
+                        color: isDark
+                            ? AppColors.textLabelSecondary
+                            : AppColors.lightTextLabelSecondary,
                       ),
                     ),
                   ),

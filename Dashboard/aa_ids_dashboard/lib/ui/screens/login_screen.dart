@@ -15,6 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -27,29 +28,28 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    final authProvider = context.read<AuthProvider>();
+
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      authProvider.setErrorMessage('Please fill in all fields');
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
+    // Clear previous errors
+    authProvider.clearErrorMessage();
+    setState(() => _isLoading = true);
+
     await authProvider.login(email, password);
 
     if (!mounted) return;
 
     if (authProvider.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage!),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _isLoading = false);
+      // Error will be displayed in the card on next rebuild
     } else if (authProvider.isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login Successful!')),
-      );
+      // Keep loading state for 3 seconds then navigate
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const DashboardScreen()),
       );
@@ -61,18 +61,19 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Use theme's scaffold background color
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: LoginCard(
               logo: const IdsLogo(size: 80),
-              buttonText: "SIGN IN",
-              isLoading: authProvider.isLoading,
+              buttonText: _isLoading ? "" : "SIGN IN",
+              isLoading: _isLoading,
               usernameController: _emailController,
               passwordController: _passwordController,
               onLoginPressed: _handleLogin,
+              errorMessage: authProvider.errorMessage,
             ),
           ),
         ),
