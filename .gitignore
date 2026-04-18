@@ -11,3 +11,6 @@ data/cleaned/csic_cleaned.csv
 # Python cache
 __pycache__/
 *.pyc
+
+
+data/raw/cicids/
