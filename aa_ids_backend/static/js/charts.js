@@ -73,7 +73,8 @@ async function refreshOverviewData() {
         fetchAndDrawTopIPs(),
         fetchAndDrawTopEndpoints(),
         fetchAndDrawLiveFeed(),
-        fetchAndDrawMLMetrics()
+        fetchAndDrawMLMetrics(),
+        buildHeatmap()
     ]);
 }
 
@@ -427,4 +428,56 @@ async function fetchAndDrawMLMetrics() {
         });
         
     } catch(err) { console.error(err); }
+}
+
+// ── Heatmap ──────────────────────────────────────────────────────────────────
+async function buildHeatmap() {
+    const container = document.getElementById('heatmap-container');
+    if (!container) return;
+
+    try {
+        const res  = await fetch('/dashboard/timeline?range=7d');
+        const data = await res.json();
+        const buckets = data.buckets || [];
+
+        // Aggregate into [weekday 0-6][hour 0-23] grid
+        const grid = Array.from({length: 7}, () => new Array(24).fill(0));
+        buckets.forEach(b => {
+            const d = new Date(b.timestamp);
+            const day  = d.getDay();   // 0=Sun
+            const hour = d.getHours();
+            grid[day][hour] += (b.attacks || 0) + (b.anomalies || 0);
+        });
+
+        const maxVal = Math.max(1, ...grid.flat());
+        const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        let html = '<div style="overflow-x:auto;height:100%">';
+        html += '<table style="border-collapse:collapse;width:100%;height:100%;font-size:10px">';
+        // Hour header
+        html += '<tr><th style="width:28px"></th>';
+        for (let h = 0; h < 24; h++) {
+            html += `<th style="color:var(--text-muted);font-weight:400;padding:0 1px;text-align:center">${h}</th>`;
+        }
+        html += '</tr>';
+
+        grid.forEach((row, di) => {
+            html += `<tr><td style="color:var(--text-secondary);padding-right:4px;white-space:nowrap">${days[di]}</td>`;
+            row.forEach((val, hi) => {
+                const intensity = val / maxVal;
+                const alpha     = (0.05 + intensity * 0.95).toFixed(2);
+                const bg        = val === 0
+                    ? 'var(--bg-elevated)'
+                    : `rgba(239,68,68,${alpha})`;
+                const title     = `${days[di]} ${hi}:00 — ${val} events`;
+                html += `<td title="${title}" style="background:${bg};border-radius:2px;padding:2px;cursor:default"></td>`;
+            });
+            html += '</tr>';
+        });
+
+        html += '</table></div>';
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = '<div class="text-[var(--text-secondary)] text-xs flex items-center justify-center h-full">Heatmap unavailable</div>';
+    }
 }

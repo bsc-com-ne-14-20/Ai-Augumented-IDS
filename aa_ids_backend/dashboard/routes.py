@@ -68,13 +68,16 @@ def upload_csv():
         
     report["dataset"]["csv_filename"] = file.filename
     
-    # Add to session history
+    # Add to session history — use dataset key (report_builder structure)
+    total_rows = report['dataset']['total_rows']
+    attacks_found = report['rule_engine']['total_detections'] + report['ml_engine']['total_detections']
+    
     upload_sessions.append({
         'session_id': str(uuid.uuid4())[:8],
         'filename': file.filename,
-        'timestamp': datetime.utcnow().isoformat() + "Z",
-        'total_rows': report['summary']['total_rows'],
-        'attacks_found': report['summary']['rule_detections'] + report['summary']['ml_detections'],
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'total_rows': total_rows,
+        'attacks_found': attacks_found,
         'status': 'complete'
     })
     

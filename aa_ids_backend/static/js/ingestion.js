@@ -164,53 +164,64 @@ function renderReport(report, filename) {
     
     document.getElementById('report-filename').textContent = `(${filename})`;
     
-    // Support parsing output from dashboard/report_builder.py
-    const s = report.summary;
-    
+    // report_builder.py returns: { dataset, rule_engine, ml_engine, comparison, row_details }
+    const ds  = report.dataset    || {};
+    const re  = report.rule_engine || {};
+    const ml  = report.ml_engine   || {};
+    const cmp = report.comparison  || {};
+
+    const totalRows      = ds.total_rows || 0;
+    const ruleDetections = re.total_detections || 0;
+    const mlDetections   = ml.total_detections || 0;
+    const ruleOnly       = cmp.only_rule_flagged || 0;
+    const mlOnly         = cmp.only_ml_flagged   || 0;
+    const agreementRate  = (cmp.agreement_rate || 0) * 100; // 0-1 → 0-100
+
     const kpisHtml = `
         <div class="card p-3 flex flex-col justify-between">
             <span class="text-[var(--text-secondary)] text-[10px] font-mono-label uppercase tracking-wider">Total Rows</span>
-            <div class="text-[var(--text-primary)] font-mono-code text-lg font-semibold">${s.total_rows}</div>
+            <div class="text-[var(--text-primary)] font-mono-code text-lg font-semibold">${totalRows}</div>
         </div>
         <div class="card p-3 flex flex-col justify-between border-[var(--warning)]/50 bg-[var(--warning)]/5">
             <span class="text-[var(--warning)] text-[10px] font-mono-label uppercase tracking-wider">Detected Attacks</span>
-            <div class="text-[var(--warning)] font-mono-code text-lg font-semibold">${s.rule_detections + s.ml_detections}</div>
+            <div class="text-[var(--warning)] font-mono-code text-lg font-semibold">${ruleDetections + mlDetections}</div>
         </div>
         <div class="card p-3 flex flex-col justify-between">
             <span class="text-[var(--text-secondary)] text-[10px] font-mono-label uppercase tracking-wider">Rule Engine (SIG)</span>
-            <div class="text-[var(--accent-primary)] font-mono-code text-lg font-semibold">${s.rule_detections}</div>
+            <div class="text-[var(--accent-primary)] font-mono-code text-lg font-semibold">${ruleDetections}</div>
         </div>
         <div class="card p-3 flex flex-col justify-between">
             <span class="text-[var(--text-secondary)] text-[10px] font-mono-label uppercase tracking-wider">ML Anomaly</span>
-            <div class="text-[var(--info)] font-mono-code text-lg font-semibold">${s.ml_detections}</div>
+            <div class="text-[var(--info)] font-mono-code text-lg font-semibold">${mlDetections}</div>
         </div>
         <div class="card p-3 flex flex-col justify-between">
             <span class="text-[var(--text-secondary)] text-[10px] font-mono-label uppercase tracking-wider">Rule Only</span>
-            <div class="text-[var(--text-primary)] font-mono-code text-lg font-semibold">${s.rule_only || 0}</div>
+            <div class="text-[var(--text-primary)] font-mono-code text-lg font-semibold">${ruleOnly}</div>
         </div>
         <div class="card p-3 flex flex-col justify-between">
             <span class="text-[var(--text-secondary)] text-[10px] font-mono-label uppercase tracking-wider">ML Only</span>
-            <div class="text-[var(--text-primary)] font-mono-code text-lg font-semibold">${s.ml_only || 0}</div>
+            <div class="text-[var(--text-primary)] font-mono-code text-lg font-semibold">${mlOnly}</div>
         </div>
     `;
     document.getElementById('report-kpis').innerHTML = kpisHtml;
     
-    // Agreement ring
+    // Agreement ring (0-100 scale)
     const agreeCircle = document.getElementById('report-agree-circle');
-    const agreeVal = document.getElementById('report-agree-val');
-    const rate = s.agreement_rate || 0;
-    
+    const agreeVal    = document.getElementById('report-agree-val');
     setTimeout(() => {
-        const offset = 251 - (251 * (rate / 100));
+        const offset = 251 - (251 * (agreementRate / 100));
         agreeCircle.style.strokeDashoffset = offset;
-        agreeVal.textContent = rate.toFixed(1) + '%';
+        agreeVal.textContent = agreementRate.toFixed(1) + '%';
     }, 100);
     
-    // Paths Table
-    const pTbody = document.getElementById('report-paths-table');
-    const pathsData = report.top_attacked_paths || [];
-    if(pathsData.length) {
-        pTbody.innerHTML = pathsData.map(p => `
+    // Top attacked paths — prefer rule_engine paths, fall back to ml_engine
+    const pTbody   = document.getElementById('report-paths-table');
+    const pathsData = (re.top_attacked_paths && re.top_attacked_paths.length)
+        ? re.top_attacked_paths
+        : (ml.top_attacked_paths || []);
+
+    if (pathsData.length) {
+        pTbody.innerHTML = pathsData.slice(0, 5).map(p => `
             <tr>
                 <td class="py-2 pr-2 truncate max-w-[200px]" title="${p.path}">${p.path}</td>
                 <td class="py-2">${p.count}</td>
@@ -220,49 +231,57 @@ function renderReport(report, filename) {
         pTbody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[var(--text-secondary)]">No attacks found</td></tr>`;
     }
     
-    // Rows
-    const rTbody = document.getElementById('report-rows-body');
-    const rowsList = report.rows || [];
+    // Row details — report_builder returns row_details[]
+    const rTbody  = document.getElementById('report-rows-body');
+    const rowsList = report.row_details || [];
+    const maxRows  = Math.min(500, rowsList.length);
+    let rowsHtml   = '';
     
-    // Render top 500 max
-    const maxRows = Math.min(500, rowsList.length);
-    let rowsHtml = '';
-    
-    for(let i=0; i<maxRows; i++) {
+    for (let i = 0; i < maxRows; i++) {
         const row = rowsList[i];
-        
+
+        // Determine combined verdict for display
+        const rVerdict = row.rule_verdict || 'CLEAN';
+        const mVerdict = row.ml_verdict   || 'CLEAN';
+        const isAttack = rVerdict === 'ATTACK' || mVerdict === 'ANOMALY';
+
         let verdictStyle = 'bg-[var(--success)]/10 text-[var(--success)]';
-        let verdictTxt = 'CLEAN';
-        if(row.verdict === 'ATTACK' || row.verdict === 'ANOMALY') {
+        let verdictTxt   = 'CLEAN';
+        if (isAttack) {
             verdictStyle = 'bg-[var(--critical)]/10 text-[var(--critical)]';
-            verdictTxt = row.verdict;
+            verdictTxt   = rVerdict === 'ATTACK' ? 'ATTACK' : 'ANOMALY';
         }
-        
+
+        // Source chip
+        const bothFlagged = rVerdict === 'ATTACK' && mVerdict === 'ANOMALY';
         let srcTag = '';
-        if(row.source === 'RULE') srcTag = '<span class="text-[9px] px-1 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 rounded">RULE</span>';
-        if(row.source === 'ML') srcTag = '<span class="text-[9px] px-1 bg-[var(--info)]/20 text-[var(--info)] border border-[var(--info)]/30 rounded">ML</span>';
-        if(row.source === 'BOTH') srcTag = '<span class="text-[9px] px-1 bg-[var(--warning)]/20 text-[var(--warning)] border border-[var(--warning)]/30 rounded">BOTH</span>';
-        
-        const cf = row.confidence ? (row.confidence*100).toFixed(1)+'%' : '-';
-        const matchDet = row.matched_rules ? row.matched_rules.slice(0,2).join(', ') + (row.matched_rules.length>2? '...':'') : '-';
-        
+        if (bothFlagged) {
+            srcTag = '<span class="text-[9px] px-1 bg-[var(--warning)]/20 text-[var(--warning)] border border-[var(--warning)]/30 rounded">BOTH</span>';
+        } else if (rVerdict === 'ATTACK') {
+            srcTag = '<span class="text-[9px] px-1 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 rounded">RULE</span>';
+        } else if (mVerdict === 'ANOMALY') {
+            srcTag = '<span class="text-[9px] px-1 bg-[var(--info)]/20 text-[var(--info)] border border-[var(--info)]/30 rounded">ML</span>';
+        }
+
+        const cf       = row.ml_confidence ? (row.ml_confidence * 100).toFixed(1) + '%' : '-';
+        const matchDet = row.rule_attack_type || (mVerdict === 'ANOMALY' ? 'ML Anomaly' : '-');
+
         rowsHtml += `
         <tr class="hover:bg-[var(--bg-elevated)]">
-            <td class="px-3 py-2 border-b border-[var(--border)] text-[var(--text-secondary)]">${i+1}</td>
-            <td class="px-3 py-2 border-b border-[var(--border)] text-[var(--text-secondary)]">${row.timestamp && row.timestamp!=="Unknown" ? new Date(row.timestamp).toLocaleTimeString() : '-'}</td>
-            <td class="px-3 py-2 border-b border-[var(--border)]">${row.method}</td>
-            <td class="px-3 py-2 border-b border-[var(--border)] truncate max-w-[200px]" title="${row.path}">${row.path}</td>
+            <td class="px-3 py-2 border-b border-[var(--border)] text-[var(--text-secondary)]">${row.row_index || i + 1}</td>
+            <td class="px-3 py-2 border-b border-[var(--border)] text-[var(--text-secondary)]">-</td>
+            <td class="px-3 py-2 border-b border-[var(--border)]">${row.method || '-'}</td>
+            <td class="px-3 py-2 border-b border-[var(--border)] truncate max-w-[200px]" title="${row.path}">${row.path || '-'}</td>
             <td class="px-3 py-2 border-b border-[var(--border)]"><span class="px-1.5 py-0.5 rounded text-[10px] ${verdictStyle}">${verdictTxt}</span></td>
             <td class="px-3 py-2 border-b border-[var(--border)]">${srcTag}</td>
             <td class="px-3 py-2 border-b border-[var(--border)]">${cf}</td>
-            <td class="px-3 py-2 border-b border-[var(--border)] truncate max-w-[150px]" title="${matchDet}">${row.verdict !== 'CLEAN' ? matchDet : '<span class="text-[var(--text-muted)]">N/A</span>'}</td>
+            <td class="px-3 py-2 border-b border-[var(--border)] truncate max-w-[150px]" title="${matchDet}">${isAttack ? matchDet : '<span class="text-[var(--text-muted)]">N/A</span>'}</td>
         </tr>`;
     }
     
-    if(rowsHtml === '') {
+    if (!rowsHtml) {
         rowsHtml = `<tr><td colspan="8" class="text-center py-8 text-[var(--text-secondary)]">No records detailed</td></tr>`;
     }
-    
     rTbody.innerHTML = rowsHtml;
 }
 
