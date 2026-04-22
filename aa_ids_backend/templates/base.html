@@ -106,59 +106,56 @@
 
     <div class="flex flex-1" style="height: calc(100vh - 56px); overflow: hidden;">
         <!-- SideNavBar -->
-        <nav id="sidebar" class="bg-[var(--bg-surface)] w-[220px] h-full border-r border-[var(--border)] rounded-r-[10px] flex flex-col justify-between py-4 flex-shrink-0 z-40 transition-all duration-300">
-            <div>
-                <div class="px-4 mb-6 flex justify-between items-center">
-                    <div class="flex items-center gap-3 mb-2 sidebar-header">
-                        <div class="w-8 h-8 rounded-DEFAULT bg-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/50 flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[var(--accent-primary)] text-[18px]">earth_engine</span>
-                        </div>
-                        <div class="sidebar-text line-clamp-1">
-                            <div class="font-black text-[var(--text-primary)] uppercase font-['Inter'] text-sm tracking-tight">AA-IDS Core</div>
-                            <div class="text-[10px] text-[var(--text-secondary)] font-mono-label tracking-wider uppercase flex items-center gap-1">
-                                <span class="bg-[var(--bg-elevated)] px-1 rounded">v1.0-prototype</span>
-                            </div>
+        <nav id="sidebar" class="bg-[var(--bg-surface)] w-[220px] border-r border-[var(--border)] rounded-r-[10px] flex flex-col flex-shrink-0 z-40 transition-all duration-300" style="height:100%">
+            <!-- Sidebar Header (fixed, never scrolls) -->
+            <div class="px-4 pt-4 pb-2 flex justify-between items-center flex-shrink-0 border-b border-[var(--border)] mb-2">
+                <div class="flex items-center gap-3 sidebar-header min-w-0">
+                    <div class="w-8 h-8 rounded-DEFAULT bg-[var(--accent-primary)]/20 border border-[var(--accent-primary)]/50 flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-[var(--accent-primary)] text-[18px]">earth_engine</span>
+                    </div>
+                    <div class="sidebar-text min-w-0">
+                        <div class="font-black text-[var(--text-primary)] uppercase font-['Inter'] text-sm tracking-tight truncate">AA-IDS Core</div>
+                        <div class="text-[10px] text-[var(--text-secondary)] font-mono-label tracking-wider uppercase flex items-center gap-1">
+                            <span class="bg-[var(--bg-elevated)] px-1 rounded">v1.0-prototype</span>
                         </div>
                     </div>
-                    <button id="sidebar-toggle" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] md:hidden lg:block ml-2">
-                        <span id="sidebar-toggle-icon" class="material-symbols-outlined text-[18px]">menu_open</span>
-                    </button>
                 </div>
-
-                <div class="flex-1 overflow-y-auto overflow-x-hidden px-2 space-y-1">
-                    <!-- Nav Items populated dynamically with request.endpoint logic -->
-                    <a href="{{ url_for('dashboard.overview') }}" class="{% if request.endpoint == 'dashboard.overview' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-4 py-2 w-full text-sm font-medium rounded-sm">
-                        <span class="material-symbols-outlined text-[18px]" {% if request.endpoint == 'dashboard.overview' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>shield</span>
-                        <span class="sidebar-text">Overview</span>
-                    </a>
-                    
-                    <a href="{{ url_for('dashboard.ingestion') }}" class="{% if request.endpoint == 'dashboard.ingestion' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-4 py-2 w-full text-sm font-medium rounded-sm">
-                        <span class="material-symbols-outlined text-[18px]" {% if request.endpoint == 'dashboard.ingestion' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>input</span>
-                        <span class="sidebar-text">Log Ingestion</span>
-                    </a>
-                    
-                    <a href="{{ url_for('dashboard.alerts_page') }}" class="{% if request.endpoint == 'dashboard.alerts_page' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-4 py-2 w-full text-sm font-medium rounded-sm flex justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-[18px]" {% if request.endpoint == 'dashboard.alerts_page' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>warning</span>
-                            <span class="sidebar-text">Alerts & Incidents</span>
-                        </div>
-                        <span id="nav-alert-count" class="bg-[var(--critical)]/10 text-[var(--critical)] text-[10px] px-1.5 py-0.5 rounded-[4px] font-mono-label hidden sidebar-text">0</span>
-                    </a>
-                    
-                    <a href="{{ url_for('dashboard.forensics') }}" class="{% if request.endpoint == 'dashboard.forensics' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-4 py-2 w-full text-sm font-medium rounded-sm">
-                        <span class="material-symbols-outlined text-[18px]" {% if request.endpoint == 'dashboard.forensics' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>manage_search</span>
-                        <span class="sidebar-text">Forensics</span>
-                    </a>
-                    
-                    <a href="{{ url_for('dashboard.analytics') }}" class="{% if request.endpoint == 'dashboard.analytics' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-4 py-2 w-full text-sm font-medium rounded-sm">
-                        <span class="material-symbols-outlined text-[18px]" {% if request.endpoint == 'dashboard.analytics' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>analytics</span>
-                        <span class="sidebar-text">Analytics</span>
-                    </a>
-                </div>
+                <button id="sidebar-toggle" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] flex-shrink-0 ml-2">
+                    <span id="sidebar-toggle-icon" class="material-symbols-outlined text-[18px]">menu_open</span>
+                </button>
             </div>
 
-            <!-- Health Mini-bars -->
-            <div class="px-4 mt-auto pt-4 border-t border-[var(--border)] space-y-3 sidebar-text text-collapse pb-4">
+            <!-- Nav Items (scrollable) -->
+            <div class="flex-1 overflow-y-auto overflow-x-hidden px-2 space-y-1 py-2">
+                <a href="{{ url_for('dashboard.overview') }}" class="{% if request.endpoint == 'dashboard.overview' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-3 py-2 w-full text-sm font-medium rounded-sm">
+                    <span class="material-symbols-outlined text-[18px] flex-shrink-0" {% if request.endpoint == 'dashboard.overview' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>shield</span>
+                    <span class="sidebar-text truncate">Overview</span>
+                </a>
+                
+                <a href="{{ url_for('dashboard.ingestion') }}" class="{% if request.endpoint == 'dashboard.ingestion' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-3 py-2 w-full text-sm font-medium rounded-sm">
+                    <span class="material-symbols-outlined text-[18px] flex-shrink-0" {% if request.endpoint == 'dashboard.ingestion' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>input</span>
+                    <span class="sidebar-text truncate">Log Ingestion</span>
+                </a>
+                
+                <a href="{{ url_for('dashboard.alerts_page') }}" class="{% if request.endpoint == 'dashboard.alerts_page' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-3 py-2 w-full text-sm font-medium rounded-sm">
+                    <span class="material-symbols-outlined text-[18px] flex-shrink-0" {% if request.endpoint == 'dashboard.alerts_page' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>warning</span>
+                    <span class="sidebar-text truncate">Alerts & Incidents</span>
+                    <span id="nav-alert-count" class="bg-[var(--critical)]/10 text-[var(--critical)] text-[10px] px-1.5 py-0.5 rounded-[4px] font-mono-label hidden sidebar-text ml-auto flex-shrink-0">0</span>
+                </a>
+                
+                <a href="{{ url_for('dashboard.forensics') }}" class="{% if request.endpoint == 'dashboard.forensics' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-3 py-2 w-full text-sm font-medium rounded-sm">
+                    <span class="material-symbols-outlined text-[18px] flex-shrink-0" {% if request.endpoint == 'dashboard.forensics' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>manage_search</span>
+                    <span class="sidebar-text truncate">Forensics</span>
+                </a>
+                
+                <a href="{{ url_for('dashboard.analytics') }}" class="{% if request.endpoint == 'dashboard.analytics' %}bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border-r-2 border-[var(--accent-primary)]{% else %}text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]{% endif %} transition-all flex items-center gap-3 px-3 py-2 w-full text-sm font-medium rounded-sm">
+                    <span class="material-symbols-outlined text-[18px] flex-shrink-0" {% if request.endpoint == 'dashboard.analytics' %}style="font-variation-settings: 'FILL' 1;"{% endif %}>analytics</span>
+                    <span class="sidebar-text truncate">Analytics</span>
+                </a>
+            </div>
+
+            <!-- Health Mini-bars (fixed at bottom) -->
+            <div class="px-4 pt-3 pb-4 border-t border-[var(--border)] space-y-2 sidebar-text text-collapse flex-shrink-0">
                 <div class="flex items-center justify-between text-xs">
                     <div class="flex items-center gap-2 text-[var(--text-secondary)]">
                         <span class="material-symbols-outlined text-[14px]">memory</span>
@@ -170,7 +167,7 @@
                     <div id="health-cpu-bar" class="bg-[var(--accent-primary)] h-full w-[0%] transition-all"></div>
                 </div>
                 
-                <div class="flex items-center justify-between text-xs mt-3">
+                <div class="flex items-center justify-between text-xs">
                     <div class="flex items-center gap-2 text-[var(--text-secondary)]">
                         <span class="material-symbols-outlined text-[14px]">storage</span>
                         <span class="font-mono-label">RAM</span>
@@ -181,7 +178,7 @@
                     <div id="health-ram-bar" class="bg-[var(--tertiary)] h-full w-[0%] transition-all"></div>
                 </div>
                 
-                <div class="flex items-center justify-between text-xs mt-3">
+                <div class="flex items-center justify-between text-xs">
                     <div class="flex items-center gap-2 text-[var(--text-secondary)]">
                         <span class="material-symbols-outlined text-[14px]">reorder</span>
                         <span class="font-mono-label">Queue</span>
@@ -198,30 +195,46 @@
     </div>
 
     <style>
-        /* Sidebar transition styles */
-        #sidebar { transition: width 0.3s ease; overflow: hidden; }
+        /* ── Sidebar ─────────────────────────────────────────────────────── */
+        #sidebar {
+            transition: width 0.3s ease;
+            /* do NOT set overflow:hidden here — it clips the nav items */
+        }
         #sidebar.collapsed { width: 64px; }
-        #sidebar.collapsed .sidebar-text { display: none; }
-        #sidebar.collapsed .sidebar-header { justify-content: center; width: 100%; }
-        #sidebar.collapsed .text-collapse { display: none; }
-        #sidebar.collapsed nav > div > .px-4,
-        #sidebar.collapsed > div > .px-4 { padding-left: 0.5rem; padding-right: 0.5rem; }
 
-        /* Prevent sidebar nav labels from clipping or overlapping */
-        #sidebar a, #sidebar .sidebar-nav-item {
-            position: relative;
+        /* Hide text labels when collapsed */
+        #sidebar.collapsed .sidebar-text { display: none !important; }
+        #sidebar.collapsed .text-collapse { display: none !important; }
+
+        /* Centre the header icon when collapsed */
+        #sidebar.collapsed .sidebar-header {
+            justify-content: center;
+        }
+
+        /* Collapsed padding for header row */
+        #sidebar.collapsed > div:first-child {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            justify-content: center;
+        }
+
+        /* Nav links: always single row, icon + truncated label */
+        #sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
             min-height: 36px;
-            white-space: nowrap;
             overflow: hidden;
+            white-space: nowrap;
+            position: relative;
         }
         #sidebar a .sidebar-text {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            min-width: 0;
             flex: 1;
+            min-width: 0;
         }
-        /* Ensure icon doesn't shrink */
         #sidebar a .material-symbols-outlined {
             flex-shrink: 0;
         }

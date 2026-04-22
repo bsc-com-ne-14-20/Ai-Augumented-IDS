@@ -95,24 +95,24 @@
 </div>
 
 <!-- Section 3 - Main Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-5 gap-gutter mb-gutter h-[320px]">
-    <div class="card col-span-3 p-4 flex flex-col">
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-gutter mb-gutter" style="min-height:280px">
+    <div class="card col-span-3 p-4 flex flex-col" style="min-height:280px">
         <h3 class="text-sm font-semibold mb-4 text-[var(--text-primary)]">Traffic & Threat Timeline</h3>
-        <div class="flex-1 relative w-full h-full">
+        <div class="flex-1 relative w-full" style="min-height:220px">
             <canvas id="timelineChart"></canvas>
         </div>
     </div>
-    <div class="card col-span-2 p-4 flex flex-col">
+    <div class="card col-span-2 p-4 flex flex-col" style="min-height:280px">
         <h3 class="text-sm font-semibold mb-4 text-[var(--text-primary)]">Attack Type Breakdown</h3>
-        <div class="flex-1 relative w-full h-full flex items-center justify-center">
+        <div class="flex-1 relative w-full flex items-center justify-center" style="min-height:220px">
             <canvas id="attackDonutChart"></canvas>
         </div>
     </div>
 </div>
 
 <!-- Section 4 - Secondary Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-gutter h-[400px]">
-    <div class="card p-4 flex flex-col overflow-hidden">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-gutter">
+    <div class="card p-4 flex flex-col" style="min-height:320px;max-height:420px">
         <h3 class="text-sm font-semibold mb-3 text-[var(--text-primary)]">Top Attacking IPs</h3>
         <div class="overflow-y-auto flex-1">
             <table class="w-full text-left text-xs" id="top-ips-table">
@@ -131,7 +131,7 @@
         </div>
     </div>
 
-    <div class="card p-4 flex flex-col overflow-hidden">
+    <div class="card p-4 flex flex-col" style="min-height:320px;max-height:420px">
         <h3 class="text-sm font-semibold mb-3 text-[var(--text-primary)]">Top Targeted Endpoints</h3>
         <div class="overflow-y-auto flex-1">
             <table class="w-full text-left text-xs" id="top-endpoints-table">
@@ -149,7 +149,7 @@
         </div>
     </div>
 
-    <div class="card p-4 flex flex-col overflow-hidden">
+    <div class="card p-4 flex flex-col" style="min-height:320px;max-height:420px">
         <div class="flex justify-between items-center mb-3">
             <h3 class="text-sm font-semibold text-[var(--text-primary)]">Live Alert Feed</h3>
             <span class="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse"></span>
@@ -164,22 +164,22 @@
 <div class="hidden">drag upload</div>
 
 <!-- Section 5 - Bottom Row -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter h-[300px] mb-8">
-    <div class="card p-4 flex flex-col">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter mb-8">
+    <div class="card p-4 flex flex-col" style="min-height:260px">
         <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-semibold text-[var(--text-primary)]">Attack Intensity Heatmap (7D)</h3>
             <a href="/ingestion" class="text-[10px] text-[var(--accent-primary)] hover:underline flex items-center gap-1">
                 <span class="material-symbols-outlined text-[12px]">upload_file</span> Upload logs
             </a>
         </div>
-        <div class="flex-1 w-full overflow-auto" id="heatmap-container">
+        <div class="flex-1 w-full overflow-auto" style="min-height:200px" id="heatmap-container">
             <div class="text-[var(--text-secondary)] text-xs h-full flex items-center justify-center">Loading Heatmap...</div>
         </div>
     </div>
     
-    <div class="card p-4 flex flex-col">
+    <div class="card p-4 flex flex-col" style="min-height:260px">
         <h3 class="text-sm font-semibold mb-2 text-[var(--text-primary)]">ML Confidence Distribution</h3>
-        <div class="flex-1 relative w-full h-full mb-4">
+        <div class="flex-1 relative w-full mb-4" style="min-height:180px">
             <canvas id="confidenceChart"></canvas>
         </div>
         <div class="flex justify-between items-end">

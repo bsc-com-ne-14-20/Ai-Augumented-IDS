@@ -16,12 +16,102 @@ REQUIRED_COLUMNS = {
     "method", "url", "path", "query_string", "body", "response_code", "content_length"
 }
 
+# Columns the user must ultimately provide (after aliasing) — used in error messages
+REQUIRED_FOR_HUMANS = ["url", "path", "method", "query_string", "body"]
+
 VALID_METHODS = {"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}
 
-def validate_csv_columns(df_columns: list[str]) -> None:
+# Alias map: raw column name → canonical name
+_COLUMN_ALIASES = {
+    "uri":        "url",
+    "request":    "url",
+    "full_url":   "url",
+    "endpoint":   "path",
+    "url_path":   "_url_path_special",   # handled separately (split into url + path)
+    "status":     "response_code",
+    "status_code":"response_code",
+    "size":       "content_length",
+    "bytes":      "content_length",
+    "qs":         "query_string",
+    "querystring":"query_string",
+    "data":       "body",
+    "payload":    "body",
+    "http_method":"method",
+    "verb":       "method",
+}
+
+
+def _normalize_columns(df: "pd.DataFrame") -> "pd.DataFrame":
+    """
+    Normalise column names in-place:
+      1. Strip BOM + whitespace, lowercase
+      2. Apply alias map
+      3. Derive url + path from url_path if needed
+      4. Cross-derive url ↔ path when only one is present
+      5. Inject safe defaults for missing optional columns
+    Returns the modified DataFrame.
+    """
+    # Step 1 — clean names
+    df.columns = [
+        c.lstrip('\ufeff').strip().lower()
+        for c in df.columns
+    ]
+
+    # Step 2 — apply aliases (rename in one pass)
+    rename_map = {}
+    for col in df.columns:
+        if col in _COLUMN_ALIASES:
+            rename_map[col] = _COLUMN_ALIASES[col]
+    if rename_map:
+        df.rename(columns=rename_map, inplace=True)
+
+    # Step 3 — url_path special split
+    if '_url_path_special' in df.columns:
+        if 'url' not in df.columns:
+            df['url'] = df['_url_path_special']
+        if 'path' not in df.columns:
+            df['path'] = df['_url_path_special'].apply(
+                lambda v: urlparse(str(v)).path if str(v).strip() else '/'
+            )
+        # keep url_path_special around so it doesn't confuse validation
+        df.drop(columns=['_url_path_special'], inplace=True, errors='ignore')
+
+    # Step 4 — cross-derive url ↔ path
+    if 'url' not in df.columns and 'path' in df.columns:
+        df['url'] = df['path']
+    elif 'path' not in df.columns and 'url' in df.columns:
+        df['path'] = df['url'].apply(
+            lambda u: urlparse(str(u)).path if str(u).strip() else '/'
+        )
+
+    # Step 5 — inject safe defaults
+    if 'response_code' not in df.columns:
+        df['response_code'] = '200'
+    if 'content_length' not in df.columns:
+        df['content_length'] = '0'
+    if 'query_string' not in df.columns:
+        df['query_string'] = ''
+    if 'body' not in df.columns:
+        df['body'] = ''
+    if 'method' not in df.columns:
+        df['method'] = 'GET'
+
+    return df
+
+
+def validate_csv_columns(df_columns: list[str], original_columns: list[str]) -> None:
+    """Raise a human-friendly ValueError if required columns are still missing."""
     missing = REQUIRED_COLUMNS - set(df_columns)
     if missing:
-        raise ValueError(f"Missing required columns: {', '.join(missing)}")
+        found_str    = ", ".join(sorted(original_columns))
+        required_str = ", ".join(sorted(REQUIRED_FOR_HUMANS))
+        raise ValueError(
+            f"Missing required columns: {', '.join(sorted(missing))}.\n"
+            f"Your CSV has these columns: [{found_str}]\n"
+            f"This app requires: [{required_str}]\n"
+            f"Tip: Rename 'url_path' to 'url' and add a 'path' column, "
+            f"or use the sample_logs.csv format as a template."
+        )
 
 def _parse_timestamp(ts_val) -> str:
     if pd.isna(ts_val) or ts_val == "" or str(ts_val).strip() == "":
@@ -67,44 +157,15 @@ def parse_csv(file_stream) -> tuple[list[dict], list[str]]:
     except Exception as e:
         raise ValueError(f"Invalid CSV format: {e}")
 
-    # ── Column normalisation (before validation) ─────────────────────────────
-    cols = df.columns.tolist()
+    # Capture original column names for error messages before any normalisation
+    original_columns = [c.lstrip('\ufeff').strip() for c in df.columns.tolist()]
+    log.debug("Detected columns: %s", original_columns)
 
-    # 1. url_path → derive both url and path
-    if 'url_path' in cols:
-        if 'url' not in cols:
-            df['url'] = df['url_path']
-        if 'path' not in cols:
-            # Extract just the path component (strip query string)
-            df['path'] = df['url_path'].apply(
-                lambda v: urlparse(str(v)).path if str(v).strip() else '/'
-            )
+    # ── Full column normalisation ─────────────────────────────────────────────
+    df = _normalize_columns(df)
 
-    # 2. status → response_code alias
-    if 'status' in cols and 'response_code' not in df.columns:
-        df.rename(columns={'status': 'response_code'}, inplace=True)
-
-    # 3. url / path cross-derivation (when only one is present)
-    if 'url' not in df.columns and 'path' in df.columns:
-        df['url'] = df['path']
-    elif 'path' not in df.columns and 'url' in df.columns:
-        df['path'] = df['url'].apply(
-            lambda u: urlparse(str(u)).path if str(u).strip() else '/'
-        )
-
-    # 4. Inject safe defaults for other optional-but-required columns
-    if 'response_code' not in df.columns:
-        df['response_code'] = '200'
-    if 'content_length' not in df.columns:
-        df['content_length'] = '0'
-    if 'query_string' not in df.columns:
-        df['query_string'] = ''
-    if 'body' not in df.columns:
-        df['body'] = ''
-    if 'method' not in df.columns:
-        df['method'] = 'GET'
-
-    validate_csv_columns(df.columns.tolist())
+    # ── Validate after normalisation ─────────────────────────────────────────
+    validate_csv_columns(df.columns.tolist(), original_columns)
     
     max_rows = config.MAX_CSV_ROWS
     if len(df) > max_rows:
