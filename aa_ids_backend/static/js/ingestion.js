@@ -150,6 +150,11 @@ async function handleFileSelected(file) {
         renderReport(report, file.name);
         fetchSessionHistory(); // Refresh history table
 
+        // Auto-scroll to report
+        setTimeout(() => {
+            document.getElementById('report-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+
     } catch (err) {
         clearInterval(stepTimer);
         document.getElementById('stepper-spinner').classList.add('hidden');

@@ -68,7 +68,7 @@
     
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-[var(--bg-deep)] text-[var(--text-primary)] min-h-screen flex flex-col font-body-md text-body-md antialiased overflow-hidden">
+<body class="bg-[var(--bg-deep)] text-[var(--text-primary)] min-h-screen flex flex-col font-body-md text-body-md antialiased">
     
     <!-- TopNavBar -->
     <header class="bg-[var(--bg-deep)] h-[56px] w-full border-b border-[var(--border)] flex justify-between items-center px-4 gap-8 flex-shrink-0 z-50">
@@ -104,7 +104,7 @@
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
+    <div class="flex flex-1" style="height: calc(100vh - 56px); overflow: hidden;">
         <!-- SideNavBar -->
         <nav id="sidebar" class="bg-[var(--bg-surface)] w-[220px] h-full border-r border-[var(--border)] rounded-r-[10px] flex flex-col justify-between py-4 flex-shrink-0 z-40 transition-all duration-300">
             <div>
@@ -199,11 +199,32 @@
 
     <style>
         /* Sidebar transition styles */
+        #sidebar { transition: width 0.3s ease; overflow: hidden; }
         #sidebar.collapsed { width: 64px; }
         #sidebar.collapsed .sidebar-text { display: none; }
         #sidebar.collapsed .sidebar-header { justify-content: center; width: 100%; }
         #sidebar.collapsed .text-collapse { display: none; }
-        #sidebar.collapsed .px-4 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        #sidebar.collapsed nav > div > .px-4,
+        #sidebar.collapsed > div > .px-4 { padding-left: 0.5rem; padding-right: 0.5rem; }
+
+        /* Prevent sidebar nav labels from clipping or overlapping */
+        #sidebar a, #sidebar .sidebar-nav-item {
+            position: relative;
+            min-height: 36px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        #sidebar a .sidebar-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+            flex: 1;
+        }
+        /* Ensure icon doesn't shrink */
+        #sidebar a .material-symbols-outlined {
+            flex-shrink: 0;
+        }
     </style>
 
     <!-- Toast Container -->

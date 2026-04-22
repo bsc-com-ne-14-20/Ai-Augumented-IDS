@@ -67,26 +67,32 @@ def parse_csv(file_stream) -> tuple[list[dict], list[str]]:
     except Exception as e:
         raise ValueError(f"Invalid CSV format: {e}")
 
-    # Column Mapping for common datasets
-    col_map = {}
+    # ── Column normalisation (before validation) ─────────────────────────────
     cols = df.columns.tolist()
-    if 'url_path' in cols and 'path' not in cols:
-        col_map['url_path'] = 'path'
-    if 'status' in cols and 'response_code' not in cols:
-        col_map['status'] = 'response_code'
-    if col_map:
-        df.rename(columns=col_map, inplace=True)
-        
-    # Inject defaults for missing expected columns
-    # Handle url and path - ensure both exist
+
+    # 1. url_path → derive both url and path
+    if 'url_path' in cols:
+        if 'url' not in cols:
+            df['url'] = df['url_path']
+        if 'path' not in cols:
+            # Extract just the path component (strip query string)
+            df['path'] = df['url_path'].apply(
+                lambda v: urlparse(str(v)).path if str(v).strip() else '/'
+            )
+
+    # 2. status → response_code alias
+    if 'status' in cols and 'response_code' not in df.columns:
+        df.rename(columns={'status': 'response_code'}, inplace=True)
+
+    # 3. url / path cross-derivation (when only one is present)
     if 'url' not in df.columns and 'path' in df.columns:
-        # If only path exists, use it as url
         df['url'] = df['path']
     elif 'path' not in df.columns and 'url' in df.columns:
-        # If only url exists, extract path from it
-        df['path'] = df['url'].apply(lambda u: urlparse(str(u)).path if str(u).strip() else '/')
-    # Note: If NEITHER url nor path exists, we don't create them - let validation catch it
-        
+        df['path'] = df['url'].apply(
+            lambda u: urlparse(str(u)).path if str(u).strip() else '/'
+        )
+
+    # 4. Inject safe defaults for other optional-but-required columns
     if 'response_code' not in df.columns:
         df['response_code'] = '200'
     if 'content_length' not in df.columns:
