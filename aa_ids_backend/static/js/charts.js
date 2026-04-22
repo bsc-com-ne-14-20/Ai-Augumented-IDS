@@ -1,194 +1,430 @@
-window.charts = {};
+// charts.js
+// Handles rendering of Chart.js graphs and fetching dashboard data
 
-function renderReport(report) {
-    const ds = report.dataset;
-    const rule = report.rule_engine;
-    const ml = report.ml_engine;
-    const comp = report.comparison;
+let timelineChartInstance = null;
+let donutChartInstance = null;
+let confidenceChartInstance = null;
 
-    // Destroy existing charts
-    for (let c in window.charts) {
-        if (window.charts[c]) {
-            window.charts[c].destroy();
+// Theming function as specified in prompt section 11
+function applyChartTheme(isDark) {
+    const textColor = isDark ? '#94A3B8' : '#475569';
+    const gridColor = isDark ? '#1E2D45' : '#E2E8F0';
+    
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+        if(Chart.defaults.plugins && Chart.defaults.plugins.legend) {
+            Chart.defaults.plugins.legend.labels.color = textColor;
         }
     }
 
-    // Populate DOM Basics
-    document.getElementById('stat-csv-filename').textContent = ds.csv_filename;
-    document.getElementById('stat-total-rows').textContent = ds.total_rows;
-    document.getElementById('stat-processing-time').textContent = ds.processing_time_ms + ' ms';
+    if(timelineChartInstance) timelineChartInstance.update();
+    if(donutChartInstance) donutChartInstance.update();
+    if(confidenceChartInstance) confidenceChartInstance.update();
+}
+
+async function initOverview() {
+    // Determine initial theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyChartTheme(isDark);
+
+    // Fetch and populate data once immediately
+    await refreshOverviewData();
+
+    // Event listeners for timeline pills
+    document.querySelectorAll('#timeline-pills button').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            // update active styling
+            document.querySelectorAll('#timeline-pills button').forEach(b => {
+                b.classList.remove('bg-[var(--bg-elevated)]', 'text-[var(--text-primary)]', 'shadow-sm', 'active-pill');
+                b.classList.add('text-[var(--text-secondary)]');
+            });
+            e.target.classList.add('bg-[var(--bg-elevated)]', 'text-[var(--text-primary)]', 'shadow-sm', 'active-pill');
+            e.target.classList.remove('text-[var(--text-secondary)]');
+            
+            const range = e.target.getAttribute('data-range');
+            await fetchAndDrawTimeline(range);
+        });
+    });
+
+    // Auto refresh logic
+    const refreshSelect = document.getElementById('auto-refresh-select');
+    let refreshInterval = null;
     
-    document.getElementById('card-stat-total-rows').textContent = ds.total_rows;
-    document.getElementById('stat-rule-detections').textContent = rule.total_detections;
-    document.getElementById('stat-ml-detections').textContent = ml.total_detections;
-    document.getElementById('stat-agreement-rate').textContent = (comp.agreement_rate * 100).toFixed(1) + '%';
-    document.getElementById('stat-rule-detection-rate').textContent = (rule.detection_rate * 100).toFixed(1) + '%';
-    document.getElementById('stat-ml-detection-rate').textContent = (ml.detection_rate * 100).toFixed(1) + '%';
-
-    document.getElementById('stat-both-flagged').textContent = comp.both_flagged;
-    document.getElementById('stat-only-rule').textContent = comp.only_rule_flagged;
-    document.getElementById('stat-only-ml').textContent = comp.only_ml_flagged;
-    document.getElementById('stat-both-clean').textContent = comp.both_clean;
-
-    if (ml.confidence_stats) {
-        document.getElementById('stat-ml-conf-mean').textContent = ml.confidence_stats.mean.toFixed(3);
-        document.getElementById('stat-ml-conf-min').textContent = ml.confidence_stats.min.toFixed(3);
-        document.getElementById('stat-ml-conf-max').textContent = ml.confidence_stats.max.toFixed(3);
+    if (refreshSelect) {
+        refreshSelect.addEventListener('change', (e) => {
+            const val = parseInt(e.target.value);
+            if(refreshInterval) clearInterval(refreshInterval);
+            
+            if(val > 0) {
+                refreshInterval = setInterval(refreshOverviewData, val * 1000);
+            }
+        });
     }
+}
 
-    // Gauges
-    const ruleGauge = document.getElementById('rule-detection-gauge');
-    ruleGauge.style.background = `conic-gradient(var(--color-red) ${(rule.detection_rate * 180)}deg, #e2e8f0 0deg)`;
-    const mlGauge = document.getElementById('ml-detection-gauge');
-    mlGauge.style.background = `conic-gradient(var(--color-orange) ${(ml.detection_rate * 180)}deg, #e2e8f0 0deg)`;
+async function refreshOverviewData() {
+    const range = document.querySelector('#timeline-pills button.active-pill')?.getAttribute('data-range') || '24h';
+    
+    await Promise.all([
+        fetchAndDrawTimeline(range),
+        fetchAndDrawDonut(),
+        fetchAndDrawStats(),
+        fetchAndDrawTopIPs(),
+        fetchAndDrawTopEndpoints(),
+        fetchAndDrawLiveFeed(),
+        fetchAndDrawMLMetrics()
+    ]);
+}
 
-    // Colors
-    const colorMap = {
-        'critical': '#EF4444',
-        'high': '#F97316',
-        'medium': '#EAB308',
-        'low': '#3B82F6',
-        'clean': '#10B981',
-        'error': '#6B7280'
-    };
+async function fetchAndDrawTimeline(range) {
+    try {
+        const res = await fetch(`/dashboard/timeline?range=${range}`);
+        const data = await res.json();
+        const buckets = data.buckets;
 
-    function renderChart(elementId, type, dataObj, keyLabel, valueLabel, isColors=false) {
-        const ctx = document.getElementById(elementId).getContext('2d');
-        const keys = Object.keys(dataObj);
-        const values = Object.values(dataObj);
-        const bgColors = isColors ? keys.map(k => colorMap[k] || '#EAB308') : '#6366f1';
-        
-        window.charts[elementId] = new Chart(ctx, {
-            type: type,
+        const labels = buckets.map(b => {
+            const d = new Date(b.timestamp);
+            return range === '24h' || range === '7d' ? 
+                d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) :
+                d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); // simplify for prototype
+        });
+
+        const ctx = document.getElementById('timelineChart')?.getContext('2d');
+        if(!ctx) return;
+
+        if (timelineChartInstance) {
+            timelineChartInstance.data.labels = labels;
+            timelineChartInstance.data.datasets[0].data = buckets.map(b => b.normal);
+            timelineChartInstance.data.datasets[1].data = buckets.map(b => b.attacks);
+            timelineChartInstance.data.datasets[2].data = buckets.map(b => b.anomalies);
+            timelineChartInstance.update();
+            return;
+        }
+
+        timelineChartInstance = new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: keys,
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Normal',
+                        data: buckets.map(b => b.normal),
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Attacks',
+                        data: buckets.map(b => b.attacks),
+                        borderColor: '#EF4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Anomalies',
+                        data: buckets.map(b => b.anomalies),
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    } catch(err) { console.error(err); }
+}
+
+async function fetchAndDrawDonut() {
+    try {
+        const res = await fetch(`/dashboard/attack-breakdown`);
+        const data = await res.json();
+        const attackTypes = data.attack_types;
+        
+        const ObjectKeys = Object.keys(attackTypes);
+        const labels = ObjectKeys.filter(k => attackTypes[k] > 0);
+        const counts = labels.map(k => attackTypes[k]);
+        
+        const colors = [];
+        labels.forEach(l => {
+            if(l === 'SQL Injection') colors.push('#EF4444');
+            else if(l === 'XSS') colors.push('#F97316');
+            else if(l === 'Path Traversal') colors.push('#EAB308');
+            else if(l === 'Encoding Evasion') colors.push('#8B5CF6');
+            else if(l === 'Protocol Anomaly') colors.push('#3B82F6');
+            else if(l === 'Scanner') colors.push('#06B6D4');
+            else if(l === 'Entropy Anomaly') colors.push('#10B981');
+            else if(l === 'ML Anomaly') colors.push('#6366F1');
+            else colors.push('#94A3B8');
+        });
+
+        if(labels.length === 0) {
+            labels.push("No Data");
+            counts.push(1);
+            colors.push('rgba(148, 163, 184, 0.1)');
+        }
+
+        const ctx = document.getElementById('attackDonutChart')?.getContext('2d');
+        if(!ctx) return;
+
+        if (donutChartInstance) {
+            donutChartInstance.data.labels = labels;
+            donutChartInstance.data.datasets[0].data = counts;
+            donutChartInstance.data.datasets[0].backgroundColor = colors;
+            donutChartInstance.update();
+            return;
+        }
+
+        donutChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
                 datasets: [{
-                    label: valueLabel,
-                    data: values,
-                    backgroundColor: bgColors
+                    data: counts,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    cutout: '70%'
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { position: 'right', labels: { boxWidth: 10 } }
+                }
+            }
         });
-    }
+    } catch(err) { console.error(err); }
+}
 
-    renderChart('rule-attack-type-chart', 'doughnut', rule.attack_type_breakdown, 'Attack Type', 'Count');
-    renderChart('rule-severity-chart', 'bar', rule.severity_breakdown, 'Severity', 'Count', true);
-    
-    // Check ml.severity_breakdown might be empty
-    if (Object.keys(ml.severity_breakdown).length > 0) {
-        renderChart('ml-severity-chart', 'bar', ml.severity_breakdown, 'Severity', 'Count', true);
-    }
-
-    // ML Histogram
-    const histCtx = document.getElementById('ml-confidence-chart').getContext('2d');
-    const histLabels = ml.confidence_histogram.map(b => b.bucket);
-    const histData = ml.confidence_histogram.map(b => b.count);
-    window.charts['ml-confidence-chart'] = new Chart(histCtx, {
-        type: 'bar',
-        data: {
-            labels: histLabels,
-            datasets: [{ label: 'Count', data: histData, backgroundColor: '#6366f1' }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
-
-    // Agreement Doughnut
-    const agCtx = document.getElementById('agreement-doughnut').getContext('2d');
-    window.charts['agreement-doughnut'] = new Chart(agCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Both Flagged', 'Only Rule', 'Only ML', 'Both Clean'],
-            datasets: [{
-                data: [comp.both_flagged, comp.only_rule_flagged, comp.only_ml_flagged, comp.both_clean],
-                backgroundColor: ['#EF4444', '#F97316', '#EAB308', '#10B981']
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
-
-    // Lists
-    function renderList(elementId, items, isDict=false) {
-        const el = document.getElementById(elementId);
-        el.innerHTML = '';
-        if (isDict) {
-            for (let [k, v] of Object.entries(items)) {
-                el.innerHTML += `<li>${k} <span class="tag">${v}</span></li>`;
-            }
-        } else {
-            for (let item of items) {
-                el.innerHTML += `<li>${item.path} <span class="tag">${item.count}</span></li>`;
-            }
-        }
-    }
-
-    renderList('rule-top-rules-list', rule.rules_triggered, true);
-    renderList('rule-top-paths-list', rule.top_attacked_paths, false);
-    renderList('ml-top-paths-list', ml.top_attacked_paths, false);
-
-    // Table
-    const tbody = document.getElementById('comparison-table-body');
-    tbody.innerHTML = '';
-    report.row_details.forEach(r => {
-        const tr = document.createElement('tr');
+async function fetchAndDrawStats() {
+    try {
+        const res = await fetch(`/dashboard/stats`);
+        const data = await res.json();
         
-        let rowClass = 'row-clean';
-        if (r.rule_verdict === 'ERROR' || r.ml_verdict === 'ERROR') {
-            rowClass = 'row-error';
-        } else if (r.rule_verdict === 'ATTACK' || r.ml_verdict === 'ANOMALY') {
-            rowClass = 'row-flagged';
-        } else if (!r.agreement) {
-            rowClass = 'row-disagreement';
+        const formatNum = (num) => new Intl.NumberFormat().format(num || 0);
+        
+        const kTotal = document.getElementById('kpi-total-requests');
+        if(kTotal) kTotal.textContent = formatNum(data.total_requests);
+        
+        const kAttacks = document.getElementById('kpi-attacks');
+        if(kAttacks) kAttacks.textContent = formatNum(data.attacks_detected);
+        
+        const kAnomalies = document.getElementById('kpi-anomalies');
+        if(kAnomalies) kAnomalies.textContent = formatNum(data.anomaly_alerts);
+        
+        const kBenign = document.getElementById('kpi-benign');
+        if(kBenign) kBenign.textContent = formatNum(data.benign_requests);
+        
+        const kFP = document.getElementById('kpi-false-positives');
+        if(kFP) kFP.textContent = formatNum(data.false_positives_flagged);
+        
+        const kAcc = document.getElementById('kpi-accuracy');
+        if(kAcc) kAcc.textContent = data.detection_accuracy_pct + '%';
+        
+        const kAccBar = document.getElementById('kpi-accuracy-bar');
+        if(kAccBar) kAccBar.style.width = data.detection_accuracy_pct + '%';
+        
+    } catch(err) { console.error(err); }
+}
+
+async function fetchAndDrawTopIPs() {
+    try {
+        const res = await fetch(`/dashboard/top-ips`);
+        const data = await res.json();
+        
+        const tbody = document.querySelector('#top-ips-table tbody');
+        if(!tbody) return;
+        
+        if(!data.ips || data.ips.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-[var(--text-secondary)]">No IP data</td></tr>`;
+            return;
         }
+        
+        tbody.innerHTML = data.ips.map(ip => {
+            const badgeClass = `badge-${ip.severity.toLowerCase()}`;
+            return `
+            <tr class="hover:bg-[var(--bg-elevated)] transition-colors">
+                <td class="px-2 py-2 font-mono-code">${ip.ip}</td>
+                <td class="px-2 py-2">${ip.attack_count}</td>
+                <td class="px-2 py-2"><span class="px-2 py-0.5 rounded-full text-[10px] ${badgeClass}">${ip.severity}</span></td>
+                <td class="px-2 py-2"><a href="/forensics?ip=${ip.ip}" class="btn btn-outline text-[10px] h-6 px-2 py-0">Inspect</a></td>
+            </tr>`;
+        }).join('');
+    } catch(err) { console.error(err); }
+}
 
-        if (!r.agreement && rowClass !== 'row-flagged') {
-            rowClass = 'row-disagreement';
+async function fetchAndDrawTopEndpoints() {
+    try {
+        const res = await fetch(`/dashboard/top-endpoints`);
+        const data = await res.json();
+        
+        const tbody = document.querySelector('#top-endpoints-table tbody');
+        if(!tbody) return;
+        
+        if(!data.endpoints || data.endpoints.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-[var(--text-secondary)]">No endpoint data</td></tr>`;
+            return;
         }
+        
+        tbody.innerHTML = data.endpoints.map(ep => {
+            const methodBadge = `badge-${ep.method.toLowerCase()}`;
+            return `
+            <tr class="hover:bg-[var(--bg-elevated)] transition-colors">
+                <td class="px-2 py-2 flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${methodBadge}">${ep.method}</span>
+                    <span class="truncate max-w-[150px]" title="${ep.path}">${ep.path}</span>
+                </td>
+                <td class="px-2 py-2">${ep.hit_count}</td>
+                <td class="px-2 py-2"><span class="px-2 py-0.5 rounded-full text-[10px] bg-[var(--bg-elevated)] border border-[var(--border)]">${ep.most_common_attack}</span></td>
+            </tr>`;
+        }).join('');
+    } catch(err) { console.error(err); }
+}
 
-        tr.className = rowClass;
-        tr.dataset.agreement = r.agreement;
-        tr.dataset.flagged = (r.rule_verdict === 'ATTACK' || r.ml_verdict === 'ANOMALY');
+async function fetchAndDrawLiveFeed() {
+    try {
+        const res = await fetch(`/dashboard/recent-alerts`);
+        const data = await res.json();
+        
+        const container = document.getElementById('live-feed-container');
+        if(!container) return;
+        
+        if(!data.alerts || data.alerts.length === 0) {
+            container.innerHTML = `<div class="text-center py-4 text-[var(--text-secondary)]">Feed is empty</div>`;
+            return;
+        }
+        
+        container.innerHTML = data.alerts.map(a => generateFeedItemHTML(a)).join('');
+    } catch(err) { console.error(err); }
+}
 
-        tr.innerHTML = `
-            <td>${r.row_index}</td>
-            <td>${r.method}</td>
-            <td style="word-break: break-all;">${r.path}</td>
-            <td>${r.rule_verdict}</td>
-            <td>${r.rule_attack_type || '-'}</td>
-            <td>${r.ml_verdict}</td>
-            <td>${r.ml_confidence !== null ? parseFloat(r.ml_confidence).toFixed(3) : '-'}</td>
-            <td>${r.agreement ? 'Yes' : 'No'}</td>
-        `;
-        tbody.appendChild(tr);
-    });
+function generateFeedItemHTML(a) {
+    let dotColor = "bg-[var(--success)]";
+    if(a.severity === "CRITICAL") dotColor = "bg-[var(--critical)]";
+    else if(a.severity === "HIGH") dotColor = "bg-[var(--warning)]";
+    else if(a.severity === "MEDIUM") dotColor = "bg-[#D97706]";
+    else if(a.severity === "LOW") dotColor = "bg-[var(--info)]";
+    
+    const sourceChip = a.detection_source === 'RULE' ? 
+        '<span class="text-[9px] px-1 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 rounded">RULE</span>' : 
+        '<span class="text-[9px] px-1 bg-[var(--info)]/20 text-[var(--info)] border border-[var(--info)]/30 rounded">ML</span>';
+        
+    return `
+    <div class="flex items-start gap-3 text-xs border-b border-[var(--border)] pb-2 last:border-0" data-alert-id="${a.id}">
+        <div class="w-2 h-2 rounded-full ${dotColor} mt-1 shrink-0"></div>
+        <div class="flex-1 overflow-hidden">
+            <div class="flex justify-between mb-0.5">
+                <span class="font-semibold text-[var(--text-primary)] truncate" title="${a.attack_type}">${a.attack_type}</span>
+                <span class="text-[var(--text-muted)] text-[10px] whitespace-nowrap pl-2" data-timestamp="${a.timestamp_iso}">${a.timestamp_relative}</span>
+            </div>
+            <div class="text-[var(--text-secondary)] flex items-center gap-2">
+                <span class="font-mono-code truncate max-w-[80px]" title="${a.source_ip}">${a.source_ip}</span>
+                <span class="material-symbols-outlined text-[10px] shrink-0">arrow_forward</span>
+                <span class="truncate" title="${a.path}">${a.path}</span>
+                <div class="shrink-0 ml-auto">${sourceChip}</div>
+            </div>
+        </div>
+    </div>`;
+}
 
-    const notice = document.getElementById('table-notice');
-    if (report.row_details.length < ds.total_rows) {
-        notice.style.display = 'block';
-        notice.textContent = `Showing first ${report.row_details.length} rows of ${ds.total_rows} total.`;
-    } else {
-        notice.style.display = 'none';
+// Ensure realtime.js can call this
+window.prependAlertToFeed = function(data) {
+    const container = document.getElementById('live-feed-container');
+    if(!container) return;
+    
+    // Remove empty state if present
+    if(container.children.length === 1 && container.children[0].textContent === "Feed is empty") {
+        container.innerHTML = '';
     }
+    
+    // Generate data for UI payload using structure returned by /analyze
+    const tsIso = data.timestamp_iso || new Date().toISOString() + "Z";
+    const mappedAlert = {
+        id: data.id || Math.random().toString(36).substr(2, 9),
+        severity: (data.severity || 'LOW').toUpperCase(),
+        timestamp_iso: tsIso,
+        timestamp_relative: "just now",
+        source_ip: data.source_ip || 'unknown',
+        method: data.method || 'GET',
+        path: data.path || '/',
+        attack_type: data.attack_type || 'Unknown Anomaly',
+        detection_source: data.detection_source || 'ML'
+    };
+    
+    const html = generateFeedItemHTML(mappedAlert);
+    container.insertAdjacentHTML('afterbegin', html);
+    
+    // Keep max 10
+    if(container.children.length > 10) {
+        container.lastElementChild.remove();
+    }
+}
 
-    // Filters
-    const filterBtns = document.querySelectorAll('.filter-btn');
-    function applyFilter(filter) {
-        document.querySelectorAll('#comparison-table-body tr').forEach(tr => {
-            if (filter === 'all') {
-                tr.classList.remove('hidden');
-            } else if (filter === 'disagreements') {
-                tr.classList.toggle('hidden', tr.dataset.agreement === 'true');
-            } else if (filter === 'attacks') {
-                tr.classList.toggle('hidden', tr.dataset.flagged === 'false');
+async function fetchAndDrawMLMetrics() {
+    try {
+        const res = await fetch(`/dashboard/ml-metrics`);
+        const data = await res.json();
+        
+        const kF1 = document.getElementById('kpi-f1');
+        if(kF1) kF1.textContent = data.f1_score.toFixed(3);
+        
+        const kFpr = document.getElementById('kpi-fpr');
+        if(kFpr) kFpr.textContent = (data.false_positive_rate * 100).toFixed(1) + '%';
+        
+        const dist = data.confidence_distribution || {};
+        const labels = Object.keys(dist);
+        const counts = labels.map(k => dist[k]);
+        
+        const ctx = document.getElementById('confidenceChart')?.getContext('2d');
+        if(!ctx) return;
+        
+        // Gradient color logic mock - 5 buckets
+        const bgColors = ['#10B981', '#EAB308', '#F59E0B', '#F97316', '#EF4444'];
+        
+        if(confidenceChartInstance) {
+            confidenceChartInstance.data.datasets[0].data = counts;
+            confidenceChartInstance.update();
+            return;
+        }
+        
+        confidenceChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: counts,
+                    backgroundColor: bgColors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y', // horizontal bar
+                plugins: { legend: { display: false }, tooltip: {
+                    callbacks: {
+                        label: function(context) { return context.raw + " alerts"; }
+                    }
+                }},
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { display: false } }
+                }
             }
         });
-    }
-
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            applyFilter(e.target.dataset.filter);
-        });
-    });
+        
+    } catch(err) { console.error(err); }
 }

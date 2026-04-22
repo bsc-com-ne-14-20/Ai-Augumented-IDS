@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Log Ingestion - AA-IDS{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-gutter max-w-6xl mx-auto pb-12">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-[var(--border)] pb-gutter">
+        <div>
+            <h1 class="font-h1 text-h1 text-[var(--text-primary)]">Log Ingestion</h1>
+            <p class="text-sm text-[var(--text-secondary)] mt-1">Upload arbitrary HTTP access logs to execute independent offline inspections via the dual-engine pipeline.</p>
+        </div>
+        <a href="/static/sample_logs.csv" download class="btn btn-outline text-xs h-[32px] gap-2">
+            <span class="material-symbols-outlined text-[16px]">download</span> Sample CSV
+        </a>
+    </div>
+
+    <!-- Upload Rules -->
+    <details class="bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg [&_summary::-webkit-details-marker]:hidden group">
+        <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 text-sm text-[var(--text-primary)]">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[var(--text-secondary)]">format_list_bulleted</span>
+                Expected Column Schema Reference
+            </div>
+            <span class="transition group-open:rotate-180">
+                <span class="material-symbols-outlined">expand_more</span>
+            </span>
+        </summary>
+        <div class="border-t border-[var(--border)] p-4 bg-[var(--bg-elevated)] overflow-x-auto">
+            <table class="w-full text-left text-xs text-[var(--text-secondary)] border-collapse">
+                <thead class="text-[var(--text-primary)] border-b border-[var(--border)]">
+                    <tr>
+                        <th class="py-2 px-3 font-semibold">Column</th>
+                        <th class="py-2 px-3 font-semibold">Type</th>
+                        <th class="py-2 px-3 font-semibold">Required</th>
+                        <th class="py-2 px-3 font-semibold">Description</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)] font-mono-code text-[11px]">
+                    <tr><td class="py-2 px-3">timestamp</td><td class="py-2 px-3">datetime</td><td class="py-2 px-3 text-[var(--success)]">✅</td><td class="py-2 px-3 text-sans text-xs">ISO 8601 representation.</td></tr>
+                    <tr><td class="py-2 px-3">method</td><td class="py-2 px-3">string</td><td class="py-2 px-3 text-[var(--success)]">✅</td><td class="py-2 px-3 text-sans text-xs">HTTP context verb</td></tr>
+                    <tr><td class="py-2 px-3">url</td><td class="py-2 px-3">string</td><td class="py-2 px-3 text-[var(--success)]">✅</td><td class="py-2 px-3 text-sans text-xs">Full target destination</td></tr>
+                    <tr><td class="py-2 px-3">path</td><td class="py-2 px-3">string</td><td class="py-2 px-3 text-[var(--success)]">✅</td><td class="py-2 px-3 text-sans text-xs">Resource path extracted</td></tr>
+                    <tr><td class="py-2 px-3">response_code</td><td class="py-2 px-3">int</td><td class="py-2 px-3 text-[var(--success)]">✅</td><td class="py-2 px-3 text-sans text-xs">Status integer logic</td></tr>
+                    <tr><td class="py-2 px-3">query_string</td><td class="py-2 px-3">string</td><td class="py-2 px-3"></td><td class="py-2 px-3 text-sans text-xs">Optional target query parameters</td></tr>
+                    <tr><td class="py-2 px-3">body</td><td class="py-2 px-3">string</td><td class="py-2 px-3"></td><td class="py-2 px-3 text-sans text-xs">Optional structured body data</td></tr>
+                    <tr><td class="py-2 px-3">content_length</td><td class="py-2 px-3">int</td><td class="py-2 px-3"></td><td class="py-2 px-3 text-sans text-xs">Byte size tracking length</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </details>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mt-2">
+        <!-- DRAG AND DROP ZONE -->
+        <div class="col-span-1 md:col-span-2">
+            <div id="drop-zone" class="border-2 border-dashed border-[var(--border)] rounded-lg h-[260px] flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] hover:border-[var(--accent-primary)] group">
+                <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
+                <span class="material-symbols-outlined text-[48px] text-[var(--accent-primary)] mb-4 group-hover:scale-110 transition-transform">cloud_upload</span>
+                <p class="font-h2 text-[var(--text-primary)] mb-2" id="drop-zone-primary">Drop your HTTP log CSV here</p>
+                <p class="text-sm text-[var(--text-secondary)] mb-4" id="drop-zone-secondary">or click to browse files</p>
+                <p class="text-xs text-[var(--text-secondary)] bg-[var(--bg-deep)] px-3 py-1 rounded-full border border-[var(--border)] flex gap-2"><span class="font-bold text-[var(--text-primary)]">Accepts .csv</span> | Max: 500MB</p>
+            </div>
+            
+            <div id="upload-error" class="hidden mt-4 p-4 rounded-lg bg-[var(--critical)]/10 border border-[var(--critical)]/30 text-[var(--critical)] text-sm flex gap-3">
+                <span class="material-symbols-outlined">error</span>
+                <span id="upload-error-text">Failed.</span>
+            </div>
+        </div>
+
+        <!-- Stepper (Hidden on normal state, triggers active classes dynamically) -->
+        <div class="col-span-1 card p-5 relative overflow-hidden flex flex-col" id="stepper-panel">
+            <h3 class="text-sm font-semibold mb-4 text-[var(--text-primary)] flex items-center justify-between">
+                Processing Status
+                <span id="stepper-spinner" class="material-symbols-outlined animate-spin text-[16px] hidden">progress_activity</span>
+            </h3>
+            
+            <div id="stepper-empty" class="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] text-center">
+                <span class="material-symbols-outlined text-3xl mb-2 opacity-50">pending_actions</span>
+                <p class="text-sm">Awaiting file upload...</p>
+            </div>
+
+            <ol class="relative border-l border-[var(--border)] ml-3 mt-2 hidden space-y-5" id="stepper-list">
+                <li class="pl-6" id="step-0">
+                    <span class="absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-4 ring-[var(--bg-surface)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] step-icon">
+                        <span class="material-symbols-outlined text-[14px]">file_present</span>
+                    </span>
+                    <h4 class="text-sm font-medium text-[var(--text-primary)] step-text">File Received</h4>
+                    <p class="text-xs text-[var(--text-muted)] mt-0.5" id="step-0-detail">...</p>
+                </li>
+                <li class="pl-6" id="step-1">
+                    <span class="absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-4 ring-[var(--bg-surface)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] step-icon">
+                        <span class="material-symbols-outlined text-[14px]">table_rows</span>
+                    </span>
+                    <h4 class="text-sm font-medium text-[var(--text-primary)] step-text">Parsing & Validating</h4>
+                </li>
+                <li class="pl-6" id="step-2">
+                    <span class="absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-4 ring-[var(--bg-surface)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] step-icon">
+                        <span class="material-symbols-outlined text-[14px]">account_tree</span>
+                    </span>
+                    <h4 class="text-sm font-medium text-[var(--text-primary)] step-text">Feature Extraction</h4>
+                </li>
+                <li class="pl-6" id="step-3">
+                    <span class="absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-4 ring-[var(--bg-surface)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] step-icon">
+                        <span class="material-symbols-outlined text-[14px]">gavel</span>
+                    </span>
+                    <h4 class="text-sm font-medium text-[var(--text-primary)] step-text">Signature Detection</h4>
+                </li>
+                <li class="pl-6" id="step-4">
+                    <span class="absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-4 ring-[var(--bg-surface)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] step-icon">
+                        <span class="material-symbols-outlined text-[14px]">psychology</span>
+                    </span>
+                    <h4 class="text-sm font-medium text-[var(--text-primary)] step-text">ML Scoring</h4>
+                </li>
+                <li class="pl-6" id="step-5">
+                    <span class="absolute flex items-center justify-center w-6 h-6 rounded-full -left-3 ring-4 ring-[var(--bg-surface)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] step-icon">
+                        <span class="material-symbols-outlined text-[14px]">article</span>
+                    </span>
+                    <h4 class="text-sm font-medium text-[var(--text-primary)] step-text">Generating Report</h4>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Analysis Report (Hidden out of gate) -->
+    <div id="report-container" class="hidden mt-4 animate-[fadeIn_0.5s_ease-out]">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <span class="material-symbols-outlined text-[var(--success)]">verified</span>
+                Analysis Report <span id="report-filename" class="text-sm font-normal font-mono-code text-[var(--text-secondary)] ml-2"></span>
+            </h2>
+            <button class="btn btn-outline text-xs h-8" onclick="document.getElementById('report-container').classList.add('hidden'); window.scrollTo(0, 0);">Clear Report</button>
+        </div>
+
+        <!-- 6 Mini KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-sm mb-gutter" id="report-kpis">
+            <!-- Dynamically populated via JS -->
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter mb-gutter">
+            <div class="card p-5 flex flex-col items-center justify-center gap-2">
+                <h3 class="text-xs font-semibold text-[var(--text-secondary)] uppercase w-full text-center tracking-wider">Engine Agreement Rate</h3>
+                <div class="relative w-32 h-32 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="var(--bg-elevated)" stroke-width="12"></circle>
+                        <circle id="report-agree-circle" cx="50" cy="50" r="40" fill="transparent" stroke="var(--info)" stroke-width="12" stroke-dasharray="251" stroke-dashoffset="0" class="transition-all duration-1000"></circle>
+                    </svg>
+                    <div class="absolute flex flex-col items-center">
+                        <span id="report-agree-val" class="font-mono-code text-2xl font-bold text-[var(--text-primary)]">0%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-[var(--text-secondary)] text-center text-balance mt-2">Overlap where both Engine & ML flagged the payload</p>
+            </div>
+            
+            <div class="card p-5 col-span-2">
+                <h3 class="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Top Attacked Paths</h3>
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-[var(--text-secondary)] border-b border-[var(--border)]">
+                            <th class="pb-2 font-medium">Path</th>
+                            <th class="pb-2 font-medium w-24">Hits</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-paths-table" class="divide-y divide-[var(--border)] text-[var(--text-primary)] font-mono-code text-[11px]">
+                        <!-- JS injected -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Dense Data Row Table -->
+        <div class="card p-0 overflow-hidden">
+            <div class="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-surface)]">
+                <h3 class="text-sm font-semibold text-[var(--text-primary)]">Log Inspection Details (Top 500 rows)</h3>
+                <div class="flex gap-2 text-xs">
+                    <span class="px-2 py-1 rounded bg-[var(--critical)]/10 text-[var(--critical)] border border-[var(--critical)]/20">Critical</span>
+                    <span class="px-2 py-1 rounded bg-[var(--success)]/10 text-[var(--success)] border border-[var(--success)]/20">Clean</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <table class="w-full text-left text-[11px] whitespace-nowrap">
+                    <thead class="bg-[var(--bg-elevated)] sticky top-0 z-10 text-[var(--text-secondary)]">
+                        <tr>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)] w-12">#</th>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)]">Timestamp</th>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)] w-16">Method</th>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)] w-1/4">Path</th>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)]">Verdict</th>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)]">Src.</th>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)]">Conf.</th>
+                            <th class="px-3 py-2 font-medium border-b border-[var(--border)]">Match Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-rows-body" class="divide-y divide-[var(--border)] text-[var(--text-primary)] font-mono-code">
+                        <!-- JS injected -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session History Table -->
+    <div class="mt-8">
+        <h2 class="text-sm font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined">history</span> Batch Upload History
+        </h2>
+        <div class="card overflow-hidden">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-b border-[var(--border)]">
+                    <tr>
+                        <th class="px-4 py-3 font-medium">Session ID</th>
+                        <th class="px-4 py-3 font-medium">Filename</th>
+                        <th class="px-4 py-3 font-medium">Time (UTC)</th>
+                        <th class="px-4 py-3 font-medium">Rows</th>
+                        <th class="px-4 py-3 font-medium">Attacks Found</th>
+                        <th class="px-4 py-3 font-medium text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="session-history-body" class="divide-y divide-[var(--border)] text-[var(--text-primary)]">
+                    <tr><td colspan="6" class="p-6 text-center text-[var(--text-secondary)]">No history loaded</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/ingestion.js') }}"></script>
+{% endblock %}

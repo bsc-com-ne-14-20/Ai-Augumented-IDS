@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}AA-IDS Overview Dashboard{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex items-center justify-between h-[64px] mb-gutter border-b border-[var(--border)] pb-gutter">
+    <h1 class="font-h1 text-h1 text-[var(--text-primary)]">Security Overview</h1>
+    <div class="flex items-center gap-4">
+        <div id="timeline-pills" class="flex bg-[var(--bg-surface)] border border-[var(--border)] rounded-DEFAULT p-0.5">
+            <button data-range="1h" class="px-3 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">1H</button>
+            <button data-range="6h" class="px-3 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">6H</button>
+            <button data-range="24h" class="px-3 py-1 text-xs font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-[2px] shadow-sm active-pill">24H</button>
+            <button data-range="7d" class="px-3 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">7D</button>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)] border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1.5 rounded-DEFAULT">
+            <span class="font-mono-label">Auto-refresh</span>
+            <select id="auto-refresh-select" class="text-xs bg-transparent border-none text-[var(--text-primary)] focus:ring-0 cursor-pointer">
+                <option value="0">Off</option>
+                <option value="30">30s</option>
+                <option value="60">1m</option>
+            </select>
+        </div>
+        <button onclick="window.print()" class="btn btn-outline text-xs h-[32px] gap-2">
+            <span class="material-symbols-outlined text-[16px]">download</span> Export PDF
+        </button>
+    </div>
+</div>
+
+<!-- KPI Summary Row -->
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-sm mb-gutter">
+    <div class="card p-3 flex flex-col justify-between group">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[var(--text-secondary)] text-[11px] font-mono-label uppercase tracking-wider">Total Requests</span>
+            <span class="material-symbols-outlined text-[16px] text-[var(--accent-primary)]">layers</span>
+        </div>
+        <div>
+            <div id="kpi-total-requests" class="text-[var(--text-primary)] font-mono-code text-[20px] font-semibold leading-none mb-1">0</div>
+        </div>
+        <div class="w-1 h-full bg-[var(--accent-primary)] absolute left-0 top-0 hidden group-hover:block transition-all"></div>
+    </div>
+
+    <div class="card p-3 flex flex-col justify-between group">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[var(--text-secondary)] text-[11px] font-mono-label uppercase tracking-wider">Attacks Detected</span>
+            <span class="material-symbols-outlined text-[16px] text-[var(--critical)]">shield_off</span>
+        </div>
+        <div>
+            <div id="kpi-attacks" class="text-[var(--critical)] font-mono-code text-[20px] font-semibold leading-none mb-1">0</div>
+        </div>
+    </div>
+
+    <div class="card p-3 flex flex-col justify-between group">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[var(--text-secondary)] text-[11px] font-mono-label uppercase tracking-wider">Anomaly Alerts</span>
+            <span class="material-symbols-outlined text-[16px] text-[var(--warning)]">warning</span>
+        </div>
+        <div>
+            <div id="kpi-anomalies" class="text-[var(--warning)] font-mono-code text-[20px] font-semibold leading-none mb-1">0</div>
+        </div>
+    </div>
+
+    <div class="card p-3 flex flex-col justify-between group">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[var(--text-secondary)] text-[11px] font-mono-label uppercase tracking-wider">Benign Requests</span>
+            <span class="material-symbols-outlined text-[16px] text-[var(--success)]">check_circle</span>
+        </div>
+        <div>
+            <div id="kpi-benign" class="text-[var(--text-primary)] font-mono-code text-[20px] font-semibold leading-none mb-1">0</div>
+        </div>
+    </div>
+
+    <div class="card p-3 flex flex-col justify-between group">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[var(--text-secondary)] text-[11px] font-mono-label uppercase tracking-wider">False Positives</span>
+            <span class="material-symbols-outlined text-[16px] text-[#EAB308]">flag</span>
+        </div>
+        <div>
+            <div id="kpi-false-positives" class="text-[var(--text-primary)] font-mono-code text-[20px] font-semibold leading-none mb-1">0</div>
+        </div>
+    </div>
+
+    <div class="card p-3 flex flex-col justify-between group relative overflow-hidden">
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-[var(--bg-elevated)]">
+            <div id="kpi-accuracy-bar" class="h-full bg-[var(--info)] w-[0%]"></div>
+        </div>
+        <div class="flex justify-between items-start mb-2 relative z-10">
+            <span class="text-[var(--text-secondary)] text-[11px] font-mono-label uppercase tracking-wider">Accuracy</span>
+            <span class="material-symbols-outlined text-[16px] text-[var(--info)]">target</span>
+        </div>
+        <div class="relative z-10 pb-2">
+            <div id="kpi-accuracy" class="text-[var(--info)] font-mono-code text-[20px] font-semibold leading-none mb-1">0%</div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 3 - Main Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-gutter mb-gutter h-[320px]">
+    <div class="card col-span-3 p-4 flex flex-col">
+        <h3 class="text-sm font-semibold mb-4 text-[var(--text-primary)]">Traffic & Threat Timeline</h3>
+        <div class="flex-1 relative w-full h-full">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
+    <div class="card col-span-2 p-4 flex flex-col">
+        <h3 class="text-sm font-semibold mb-4 text-[var(--text-primary)]">Attack Type Breakdown</h3>
+        <div class="flex-1 relative w-full h-full flex items-center justify-center">
+            <canvas id="attackDonutChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Section 4 - Secondary Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-gutter h-[400px]">
+    <div class="card p-4 flex flex-col overflow-hidden">
+        <h3 class="text-sm font-semibold mb-3 text-[var(--text-primary)]">Top Attacking IPs</h3>
+        <div class="overflow-y-auto flex-1">
+            <table class="w-full text-left text-xs" id="top-ips-table">
+                <thead class="text-[var(--text-secondary)] uppercase bg-[var(--bg-elevated)] top-0 sticky z-10">
+                    <tr>
+                        <th class="px-2 py-2">IP Address</th>
+                        <th class="px-2 py-2">Hits</th>
+                        <th class="px-2 py-2">Severity</th>
+                        <th class="px-2 py-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)] text-[var(--text-primary)]">
+                    <!-- Dynamic -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card p-4 flex flex-col overflow-hidden">
+        <h3 class="text-sm font-semibold mb-3 text-[var(--text-primary)]">Top Targeted Endpoints</h3>
+        <div class="overflow-y-auto flex-1">
+            <table class="w-full text-left text-xs" id="top-endpoints-table">
+                <thead class="text-[var(--text-secondary)] uppercase bg-[var(--bg-elevated)] top-0 sticky z-10">
+                    <tr>
+                        <th class="px-2 py-2">Method / Path</th>
+                        <th class="px-2 py-2">Hits</th>
+                        <th class="px-2 py-2">Dominant Attack</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)] text-[var(--text-primary)]">
+                    <!-- Dynamic -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card p-4 flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-sm font-semibold text-[var(--text-primary)]">Live Alert Feed</h3>
+            <span class="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse"></span>
+        </div>
+        <div class="overflow-y-auto flex-1 pr-2 space-y-3" id="live-feed-container">
+            <!-- Dynamic -->
+        </div>
+    </div>
+</div>
+
+<!-- Section 5 - Bottom Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter h-[300px] mb-8">
+    <div class="card p-4 flex flex-col">
+        <h3 class="text-sm font-semibold mb-2 text-[var(--text-primary)]">Attack Intensity Heatmap (7D)</h3>
+        <div class="flex-1 w-full h-full flex flex-col" id="heatmap-container">
+            <!-- Simulated Heatmap Grid -->
+            <div class="text-[var(--text-secondary)] text-xs h-full flex items-center justify-center">Loading Heatmap...</div>
+        </div>
+    </div>
+    
+    <div class="card p-4 flex flex-col">
+        <h3 class="text-sm font-semibold mb-2 text-[var(--text-primary)]">ML Confidence Distribution</h3>
+        <div class="flex-1 relative w-full h-full mb-4">
+            <canvas id="confidenceChart"></canvas>
+        </div>
+        <div class="flex justify-between items-end">
+            <div>
+                <div class="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">F1 Score</div>
+                <div class="font-mono-code text-[var(--text-primary)] text-sm font-bold" id="kpi-f1">0.0</div>
+            </div>
+            <div>
+                <div class="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider mb-1">False Positive Rate</div>
+                <div class="font-mono-code text-[var(--text-primary)] text-sm font-bold" id="kpi-fpr">0.0%</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+    // Local scripts specific to Overview Page
+    document.addEventListener("DOMContentLoaded", () => {
+        if(typeof initOverview === 'function') initOverview();
+    });
+</script>
+{% endblock %}

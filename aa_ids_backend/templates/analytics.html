@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - AA-IDS{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-gutter max-w-7xl mx-auto pb-12">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-[var(--border)] pb-gutter">
+        <div>
+            <h1 class="font-h1 text-h1 text-[var(--text-primary)]">Detection Analytics</h1>
+            <p class="text-sm text-[var(--text-secondary)] mt-1">Deep dive into attack trends and ML model performance metrics.</p>
+        </div>
+        <div class="flex bg-[var(--bg-surface)] border border-[var(--border)] rounded-DEFAULT p-0.5">
+            <button class="px-3 py-1 text-xs font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm rounded-[2px]">7 Days</button>
+            <button class="px-3 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">30 Days</button>
+            <button class="px-3 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">90 Days</button>
+        </div>
+    </div>
+
+    <!-- Section 1 - Trend Chart -->
+    <div class="card p-4 h-[350px] flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-semibold text-[var(--text-primary)]">Threat Trend Analysis</h3>
+        </div>
+        <div class="flex-1 relative w-full h-full">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Section 2 - ML Metrics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+        
+        <!-- Confusion Matrix -->
+        <div class="card p-4 flex flex-col">
+            <h3 class="text-sm font-semibold text-[var(--text-primary)] mb-1">Confusion Matrix</h3>
+            <p class="text-xs text-[var(--text-secondary)] mb-4">CSIC 2010 Random Forest Test Evaluation</p>
+            
+            <div class="flex-1 grid grid-cols-[auto_1fr_1fr] grid-rows-[auto_1fr_1fr] gap-2 text-xs">
+                <div></div>
+                <div class="flex items-center justify-center font-semibold text-[var(--text-secondary)]">Predicted Clean</div>
+                <div class="flex items-center justify-center font-semibold text-[var(--text-secondary)]">Predicted Attack</div>
+                
+                <div class="flex items-center justify-center -rotate-90 origin-center whitespace-nowrap font-semibold text-[var(--text-secondary)]">Actual Clean</div>
+                <div class="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded flex flex-col items-center justify-center p-4">
+                    <span class="text-[var(--text-secondary)] uppercase tracking-wider text-[10px] mb-1">True Negative</span>
+                    <span class="font-mono-code text-2xl text-[var(--success)] font-bold indicator-count" data-val="TN">0</span>
+                    <span class="text-[10px] text-[var(--success)]/70 mt-1">63.1%</span>
+                </div>
+                <div class="bg-[var(--warning)]/10 border border-[var(--warning)]/30 rounded flex flex-col items-center justify-center p-4">
+                    <span class="text-[var(--text-secondary)] uppercase tracking-wider text-[10px] mb-1">False Positive</span>
+                    <span class="font-mono-code text-2xl text-[var(--warning)] font-bold indicator-count" data-val="FP">0</span>
+                    <span class="text-[10px] text-[var(--warning)]/70 mt-1">0.4%</span>
+                </div>
+                
+                <div class="flex items-center justify-center -rotate-90 origin-center whitespace-nowrap font-semibold text-[var(--text-secondary)]">Actual Attack</div>
+                <div class="bg-[#F97316]/10 border border-[#F97316]/30 rounded flex flex-col items-center justify-center p-4">
+                    <span class="text-[var(--text-secondary)] uppercase tracking-wider text-[10px] mb-1">False Negative</span>
+                    <span class="font-mono-code text-2xl text-[#F97316] font-bold indicator-count" data-val="FN">0</span>
+                    <span class="text-[10px] text-[#F97316]/70 mt-1">0.4%</span>
+                </div>
+                <div class="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded flex flex-col items-center justify-center p-4">
+                    <span class="text-[var(--text-secondary)] uppercase tracking-wider text-[10px] mb-1">True Positive</span>
+                    <span class="font-mono-code text-2xl text-[var(--success)] font-bold indicator-count" data-val="TP">0</span>
+                    <span class="text-[10px] text-[var(--success)]/70 mt-1">36.1%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation Metrics Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div class="card p-4 flex flex-col justify-center">
+                <div class="text-[10px] text-[var(--text-secondary)] tracking-wider uppercase mb-1">Accuracy</div>
+                <div class="font-mono-code text-2xl font-bold text-[var(--info)]" id="metric-acc">0.0%</div>
+            </div>
+            <div class="card p-4 flex flex-col justify-center">
+                <div class="text-[10px] text-[var(--text-secondary)] tracking-wider uppercase mb-1">Precision</div>
+                <div class="font-mono-code text-2xl font-bold text-[var(--text-primary)]" id="metric-pre">0.0%</div>
+            </div>
+            <div class="card p-4 flex flex-col justify-center">
+                <div class="text-[10px] text-[var(--text-secondary)] tracking-wider uppercase mb-1">Recall</div>
+                <div class="font-mono-code text-2xl font-bold text-[var(--text-primary)]" id="metric-rec">0.0%</div>
+            </div>
+            <div class="card p-4 flex flex-col justify-center">
+                <div class="text-[10px] text-[var(--text-secondary)] tracking-wider uppercase mb-1 flex items-center gap-1">F1 Score <span class="material-symbols-outlined text-[12px] text-[var(--accent-primary)]" title="Harmonic mean of precision and recall">info</span></div>
+                <div class="font-mono-code text-2xl font-bold text-[var(--accent-primary)]" id="metric-f1">0.000</div>
+            </div>
+            <div class="card p-4 flex flex-col justify-center bg-[var(--critical)]/5 border border-[var(--critical)]/20">
+                <div class="text-[10px] text-[var(--text-secondary)] tracking-wider uppercase mb-1 flex items-center gap-1">False Pos. Rate <span class="material-symbols-outlined text-[12px] text-[var(--critical)]" title="Rate of clean traffic flagged">info</span></div>
+                <div class="font-mono-code text-2xl font-bold text-[var(--critical)]" id="metric-fpr">0.0%</div>
+            </div>
+            <div class="card p-4 flex flex-col justify-center bg-[#F97316]/5 border border-[#F97316]/20">
+                <div class="text-[10px] text-[var(--text-secondary)] tracking-wider uppercase mb-1 flex items-center gap-1">False Neg. Rate <span class="material-symbols-outlined text-[12px] text-[#F97316]" title="Rate of attacks missed">info</span></div>
+                <div class="font-mono-code text-2xl font-bold text-[#F97316]" id="metric-fnr">0.0%</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Section 3 - Bottom Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter h-[320px]">
+        <!-- Feature Importance -->
+        <div class="card p-4 flex flex-col">
+            <h3 class="text-sm font-semibold text-[var(--text-primary)] mb-4">Model Feature Importance (Top 10)</h3>
+            <div class="flex-1 relative w-full h-full">
+                <canvas id="featureImportanceChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Confidence Dist -->
+        <div class="card p-4 flex flex-col">
+            <h3 class="text-sm font-semibold text-[var(--text-primary)] mb-4">Confidence Distribution (Live Session)</h3>
+            <div class="flex-1 relative w-full h-full">
+                <canvas id="liveConfidenceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}
