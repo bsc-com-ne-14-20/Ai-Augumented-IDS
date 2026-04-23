@@ -298,3 +298,19 @@ plt.show()
 print("\nTop 15 Most Important Features:")
 print(importances.nlargest(15).round(5))
 
+
+import joblib
+from pathlib import Path
+
+MODEL_DIR = Path("/home/rashid/Documents/FYP/Ai-Augumented-IDS/models")
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+label_mapping = {'OTHER': 0, 'SQLI': 1, 'XSS': 2, 'PATH_TRAVERSAL': 3}
+
+joblib.dump(model, MODEL_DIR / "xgb_model.pkl")
+joblib.dump(X_train.columns.tolist(), MODEL_DIR / "xgb_feature_names.pkl")
+joblib.dump(label_mapping, MODEL_DIR / "xgb_label_mapping.pkl")
+
+print(f"\n✓  XGB model saved    → {MODEL_DIR / 'xgb_model.pkl'}")
+print(f"✓  XGB features saved → {MODEL_DIR / 'xgb_feature_names.pkl'}")
+print(f"✓  XGB labels saved   → {MODEL_DIR / 'xgb_label_mapping.pkl'}")
