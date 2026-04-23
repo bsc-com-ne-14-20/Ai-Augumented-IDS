@@ -178,3 +178,15 @@ display.plot()
 plt.title("Confusion matrix")
 plt.show()
 
+
+import joblib
+from pathlib import Path
+
+MODEL_DIR = Path("/home/rashid/Documents/FYP/Ai-Augumented-IDS/models")
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+joblib.dump(rf, MODEL_DIR / "rf_model.pkl")
+joblib.dump(X_train.columns.tolist(), MODEL_DIR / "rf_feature_names.pkl")
+
+print(f"\n✓  RF model saved     → {MODEL_DIR / 'rf_model.pkl'}")
+print(f"✓  RF features saved  → {MODEL_DIR / 'rf_feature_names.pkl'}")

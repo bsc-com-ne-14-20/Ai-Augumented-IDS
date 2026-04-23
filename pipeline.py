@@ -76,6 +76,7 @@ PIPELINE_DIR = ROOT / "pipeline"
 DATA_DIR     = ROOT / "data"
 RESULTS_DIR  = ROOT / "results"
 
+
 PATHS = {
     # Stage 1 inputs / outputs
     "raw_csv":            DATA_DIR / "raw/csic_database.csv",
@@ -85,6 +86,8 @@ PATHS = {
     "test_csv":           DATA_DIR / "final/test.csv",
     "scaler":             DATA_DIR / "final/scaler.pkl",
     "feature_names":      DATA_DIR / "final/feature_names.txt",
+    "models_dir": ROOT / "models",
+
 
     # Stage 3 intermediate
     "train_attacks_only": ROOT / "train_attacks_only.csv",
@@ -326,19 +329,18 @@ def run_stage2(threshold: int) -> bool:
 # ════════════════════════════════════════════════════════════════
 # Stage 3 — ML Models
 # ════════════════════════════════════════════════════════════════
-
 def run_stage3() -> bool:
     section("STAGE 3 — ML Models (Random Forest + XGBoost)")
 
     # ── 3a. Check prerequisites ───────────────────────────────
-    step(1, 5, "Checking prerequisites")
+    step(1, 4, "Checking prerequisites")
     if not check_file(PATHS["train_csv"], "train.csv") or \
        not check_file(PATHS["test_csv"],  "test.csv"):
         error("Run Stage 1 first to generate train/test splits")
         return False
 
     # ── 3b. Generate attacks-only files ──────────────────────
-    step(2, 5, "Generating attacks-only datasets (file_manuplation2.py)")
+    step(2, 4, "Generating attacks-only datasets (file_manuplation2.py)")
     log(f"  Input  : train.csv + test.csv")
     log(f"  Output : train_attacks_only.csv + test_attacks_only.csv")
 
@@ -347,7 +349,6 @@ def run_stage3() -> bool:
         error(f"file_manuplation2.py not found at {file_manip}")
         return False
 
-    # Patch hardcoded absolute paths
     _patch_paths(file_manip, {
         "/home/rashid/Documents/FYP/Ai-Augumented-IDS/data/final/train.csv":
             str(PATHS["train_csv"]),
@@ -366,48 +367,48 @@ def run_stage3() -> bool:
     check_file(PATHS["train_attacks_only"], "train_attacks_only.csv")
     check_file(PATHS["test_attacks_only"],  "test_attacks_only.csv")
 
-    # ── 3c. Convert ML notebooks → .py ───────────────────────
-    step(3, 5, "Converting ML notebooks to scripts")
-    convert_notebook(PATHS["train1_nb"], PATHS["train1_py"])
-    convert_notebook(PATHS["train2_nb"], PATHS["train2_py"])
-
-    # ── 3d. Run Random Forest (train1) ────────────────────────
-    step(4, 5, "Training Random Forest — binary classification")
+    # ── 3c. Train Random Forest ───────────────────────────────
+    step(3, 4, "Training Random Forest — binary classification")
     log(f"  Input  : train.csv + test.csv")
     log(f"  Task   : Normal (0) vs Attack (1)")
-
-    _patch_paths(PATHS["train1_py"], {
-        "/home/rashid/Documents/FYP/Ai-Augumented-IDS/data/final/train.csv":
-            str(PATHS["train_csv"]),
-        "/home/rashid/Documents/FYP/Ai-Augumented-IDS/data/final/test.csv":
-            str(PATHS["test_csv"]),
-    })
 
     ok = run_cmd([sys.executable, str(PATHS["train1_py"])], cwd=ROOT)
     if not ok:
         warn("Random Forest training encountered an issue — check output above")
+        return False
 
-    # ── 3e. Run XGBoost (train2) ──────────────────────────────
-    step(5, 5, "Training XGBoost — multi-class attack classification")
+    # ── 3d. Train XGBoost ─────────────────────────────────────
+    step(4, 4, "Training XGBoost — multi-class attack classification")
     log(f"  Input  : train_attacks_only.csv + test_attacks_only.csv")
     log(f"  Task   : SQLi | XSS | Path Traversal | Other")
-
-    _patch_paths(PATHS["train2_py"], {
-        "/home/rashid/Documents/FYP/Ai-Augumented-IDS/train_attacks_only.csv":
-            str(PATHS["train_attacks_only"]),
-        "/home/rashid/Documents/FYP/Ai-Augumented-IDS/test_attacks_only.csv":
-            str(PATHS["test_attacks_only"]),
-    })
 
     ok = run_cmd([sys.executable, str(PATHS["train2_py"])], cwd=ROOT)
     if not ok:
         warn("XGBoost training encountered an issue — check output above")
         return False
 
-    success("Stage 3 complete")
-    return True
+    # ── 3e. Validate saved models ─────────────────────────────
+    step(4, 4, "Validating saved models")
+    models_dir = PATHS["models_dir"]
+    expected_models = [
+        "rf_model.pkl",
+        "rf_feature_names.pkl",
+        "xgb_model.pkl",
+        "xgb_feature_names.pkl",
+        "xgb_label_mapping.pkl",
+    ]
+    all_ok = True
+    for f in expected_models:
+        path = models_dir / f
+        if path.exists():
+            success(f"{f}")
+        else:
+            warn(f"{f} not found")
+            all_ok = False
 
-
+    if all_ok:
+        success("Stage 3 complete — all models verified")
+    return all_ok
 # ════════════════════════════════════════════════════════════════
 # Path patcher — fixes hardcoded absolute paths in scripts
 # ════════════════════════════════════════════════════════════════
