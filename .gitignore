@@ -12,4 +12,5 @@ data/cleaned/csic_cleaned.csv
 __pycache__/
 *.pyc
 
-/venv
+/venvvenv/
+*.so
