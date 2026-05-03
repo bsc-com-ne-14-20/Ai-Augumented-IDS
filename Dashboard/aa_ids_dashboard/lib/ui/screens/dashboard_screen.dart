@@ -7,6 +7,7 @@ import '../custom_widgets/app_bar.dart';
 import '../theming/app_colors.dart';
 import '/models/dashboard_models.dart';
 import '/state/theme_provider.dart';
+import '/state/dashboard_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,112 +25,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    sampleIncidents = [
-      Incident(
-        id: 'INC-0047',
-        time: '14:31',
-        endpoint: '/api/login',
-        method: 'POST',
-        threat: 'High',
-        reviewedStatus: 'Pending',
-        name: 'SQL Injection Attempt',
-        score: 0.94,
-        sourceIp: '192.168.4.77',
-        detector: 'ML Model',
-        alertMessage:
-            'Malicious SQLi payload in POST body at web server ingress',
-        httpRequest: 'POST /api/login HTTP/1.1\n'
-            'Host: target.app.internal\n'
-            'Content-Type: application/x-www-form-urlencoded\n\n'
-            "username=admin' OR '1'='1&password=test",
-      ),
-      Incident(
-        id: 'INC-0046',
-        time: '14:28',
-        endpoint: '/admin/cfg',
-        method: 'GET',
-        threat: 'High',
-        reviewedStatus: 'Pending',
-        name: 'Path Traversal Attempt',
-        score: 0.88,
-        sourceIp: '10.10.5.22',
-        detector: 'Signature',
-        alertMessage: 'Directory traversal pattern detected in request URI',
-        httpRequest: 'GET /admin/cfg/../../../etc/passwd HTTP/1.1\n'
-            'Host: target.app.internal\n'
-            'User-Agent: Mozilla/5.0 (scanner)',
-      ),
-      Incident(
-        id: 'INC-0045',
-        time: '14:22',
-        endpoint: '/api/users',
-        method: 'POST',
-        threat: 'Med',
-        reviewedStatus: 'Yes',
-        name: 'Brute Force Login',
-        score: 0.71,
-        sourceIp: '203.0.113.9',
-        detector: 'ML Model',
-        alertMessage: '847 failed login attempts from single IP in 60 seconds',
-        httpRequest: 'POST /api/users HTTP/1.1\n'
-            'Host: target.app.internal\n'
-            'X-Request-Count: 847\n\n'
-            'username=admin&password=password123',
-      ),
-      Incident(
-        id: 'INC-0044',
-        time: '14:17',
-        endpoint: '/search',
-        method: 'GET',
-        threat: 'Med',
-        reviewedStatus: 'Pending',
-        name: 'XSS Payload Detected',
-        score: 0.67,
-        sourceIp: '172.16.0.88',
-        detector: 'Signature',
-        alertMessage: 'Reflected XSS vector in query string parameter',
-        httpRequest: 'GET /search?q=<script>alert(1)</script> HTTP/1.1\n'
-            'Host: target.app.internal',
-      ),
-      Incident(
-        id: 'INC-0043',
-        time: '14:12',
-        endpoint: '/api/export',
-        method: 'POST',
-        threat: 'High',
-        reviewedStatus: 'Yes',
-        name: 'CSRF Token Violation',
-        score: 0.82,
-        sourceIp: '198.51.100.45',
-        detector: 'Signature',
-        alertMessage:
-            'Missing or invalid CSRF token in state-changing request',
-        httpRequest: 'POST /api/export HTTP/1.1\n'
-            'Host: target.app.internal\n'
-            'Referer: target.app.internal\n\n'
-            'format=pdf',
-      ),
-      Incident(
-        id: 'INC-0042',
-        time: '14:08',
-        endpoint: '/upload',
-        method: 'POST',
-        threat: 'Low',
-        reviewedStatus: 'Yes',
-        name: 'Suspicious File Upload',
-        score: 0.45,
-        sourceIp: '192.0.2.12',
-        detector: 'ML Model',
-        alertMessage:
-            'File upload with potentially malicious extension detected',
-        httpRequest: 'POST /upload HTTP/1.1\n'
-            'Host: target.app.internal\n'
-            'Content-Type: multipart/form-data\n\n'
-            '--boundary\n'
-            'Content-Disposition: form-data; name="file"; '
-            'filename="shell.php.jpg"',
-      ),
-    ];
+    sampleIncidents = [];
+    
+    // Initialize dashboard provider for real-time alerts and API calls
+    final dashboardProvider = context.read<DashboardProvider>();
+    dashboardProvider.initializeRealtimeAlerts();
+    
+    // Load backend metrics and initial alerts
+    // This will populate the provider with real data from the backend
+    dashboardProvider.checkHealth();
+    dashboardProvider.fetchMetrics();
+    dashboardProvider.fetchAlerts();
   }
 
   // ── Notification helpers ───────────────────────────────────────
@@ -396,14 +302,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Build ──────────────────────────────────────────────────────
 
-  int get _unreviewedCount => sampleIncidents
-      .where((i) => i.reviewedStatus.toLowerCase() == 'pending')
-      .length;
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    final dashboardProvider = context.watch<DashboardProvider>();
     final isDark = themeProvider.isDarkTheme;
+
+    // Calculate total unreviewed (Local CSV + Backend Alerts)
+    final int unreviewedCount = sampleIncidents
+            .where((i) => i.reviewedStatus.toLowerCase() == 'pending')
+            .length +
+        dashboardProvider.incidents
+            .where((i) => i.reviewedStatus.toLowerCase() == 'no')
+            .length;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkVeryLight : AppColors.lightVeryLight,
@@ -456,8 +367,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: DashboardMetricCard(
                           title: 'TOTAL INCIDENTS LOGGED',
-                          // Live count — updates when CSV rows are added.
-                          value: '${sampleIncidents.length}',
+                          // Combine fetched alerts and imported ones
+                          value: (dashboardProvider.totalAlerts +
+                                  sampleIncidents.length)
+                              .toString(),
                           accentColor: const Color(0xFF4A9EFF),
                           icon: Icons.list_alt_rounded,
                           showBottomSection: false,
@@ -467,7 +380,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: DashboardMetricCard(
                           title: 'REQUESTS INSPECTED',
-                          value: '84.2k',
+                          value: dashboardProvider
+                                  .metrics?.totalRequestsAnalyzed
+                                  .toString() ??
+                              '0',
                           accentColor: const Color(0xFF9B6BFF),
                           icon: Icons.article_outlined,
                           showBottomSection: false,
@@ -477,7 +393,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: DashboardMetricCard(
                           title: 'DETECTION RATE',
-                          value: '0.056%',
+                          value: dashboardProvider.metrics != null
+                              ? '${((dashboardProvider.metrics!.totalAttactsDetected / (dashboardProvider.metrics!.totalRequestsAnalyzed > 0 ? dashboardProvider.metrics!.totalRequestsAnalyzed : 1)) * 100).toStringAsFixed(3)}%'
+                              : '0.000%',
                           accentColor: const Color(0xFFFFC107),
                           icon: Icons.insights_rounded,
                           showBottomSection: false,
@@ -488,7 +406,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: DashboardMetricCard(
                           title: 'UNREVIEWED ALERTS',
                           // Live count — decrements as incidents are clicked.
-                          value: '$_unreviewedCount',
+                          value: '$unreviewedCount',
                           accentColor: const Color(0xFFFF5C5C),
                           icon: Icons.warning_amber_rounded,
                           showBottomSection: false,
@@ -507,25 +425,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Expanded(
                           flex: 7,
                           child: IncidentList(
-                            incidents: sampleIncidents,
+                            incidents: [
+                              ...dashboardProvider.incidents,
+                              ...sampleIncidents
+                            ],
                             onIncidentSelected: (incident) {
                               setState(
                                   () => _selectedIncident = incident);
                             },
                             onIncidentStatusUpdated: (updated) {
+                              // 1. Check if it's a local CSV incident
+                              final idx = sampleIncidents
+                                  .indexWhere((i) => i.id == updated.id);
+                              
                               setState(() {
-                                final idx = sampleIncidents
-                                    .indexWhere(
-                                        (i) => i.id == updated.id);
-                                if (idx >= 0 && idx < sampleIncidents.length) {
-                                  // Replace in-place and create a new
-                                  // list reference so Flutter diffs it.
-                                  final copy = [...sampleIncidents];
-                                  copy[idx] = updated;
-                                  sampleIncidents = copy;
+                                if (idx >= 0) {
+                                  sampleIncidents[idx] = updated;
+                                } else {
+                                  // 2. Otherwise update the provider (backend incident)
+                                  dashboardProvider.markIncidentAsReviewed(updated.id);
                                 }
-                                if (_selectedIncident?.id ==
-                                    updated.id) {
+
+                                // 3. Sync the detail panel selection
+                                if (_selectedIncident?.id == updated.id) {
                                   _selectedIncident = updated;
                                 }
                               });
