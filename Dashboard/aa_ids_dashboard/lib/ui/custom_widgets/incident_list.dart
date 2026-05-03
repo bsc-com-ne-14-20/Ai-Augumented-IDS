@@ -86,6 +86,31 @@ class _IncidentListState extends State<IncidentList> {
     widget.onIncidentSelected?.call(resolved);
   }
 
+  Map<String, Color> _getChipColors(String chipType, bool isDark, Color? accentColor) {
+    switch (chipType) {
+      case 'method':
+        return {
+          'fg': AppColors.accentBlueSoft,
+          'bg': isDark ? AppColors.darkSecondaryBg : AppColors.lightSecondaryBg,
+          'border': isDark ? AppColors.borderSecondary : AppColors.lightBorderSecondary,
+        };
+      case 'threat':
+        return {
+          'fg': accentColor ?? Colors.grey,
+          'bg': (accentColor ?? Colors.grey).withOpacity(0.15),
+          'border': (accentColor ?? Colors.grey).withOpacity(0.4),
+        };
+      case 'reviewed':
+        return {
+          'fg': accentColor ?? Colors.grey,
+          'bg': (accentColor ?? Colors.grey).withOpacity(0.15),
+          'border': (accentColor ?? Colors.grey).withOpacity(0.4),
+        };
+      default:
+        return {'fg': Colors.grey, 'bg': Colors.grey, 'border': Colors.grey};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
@@ -290,13 +315,16 @@ class _IncidentListState extends State<IncidentList> {
                                 flex: 2,
                                 child: Align(
                                   alignment: Alignment.centerLeft,
-                                  child: _Chip(
-                                    label: inc.method,
-                                    fg: AppColors.accentBlueSoft,
-                                    bg: AppColors.darkSecondaryBg,
-                                    border: AppColors.borderSecondary,
-                                    mono: true,
-                                  ),
+                                  child: Builder(builder: (context) {
+                                    final methodColors = _getChipColors('method', isDark, null);
+                                    return _Chip(
+                                      label: inc.method,
+                                      fg: methodColors['fg']!,
+                                      bg: methodColors['bg']!,
+                                      border: methodColors['border']!,
+                                      mono: true,
+                                    );
+                                  }),
                                 ),
                               ),
                               Expanded(
