@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '/models/dashboard_models.dart';
 import '../theming/app_colors.dart';
+import '/state/theme_provider.dart';
 
 class IncidentDetailPanel extends StatelessWidget {
   final Incident? incident;
@@ -27,48 +29,56 @@ class IncidentDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (incident == null) {
-      return _buildEmptyState();
+      return _buildEmptyState(context);
     }
 
     final accentColor = _getThreatColor(incident!.threat);
 
-    return _buildDetailCard(incident!, accentColor);
+    return _buildDetailCard(context, incident!, accentColor);
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkTheme;
     return Container(
       height: 420,
       decoration: BoxDecoration(
-        color: AppColors.darkCardBg,
+        color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderDark),
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.lightBorderDark),
       ),
-      child: const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.select_all_rounded, size: 52, color: AppColors.textMutedIcon),
-            SizedBox(height: 16),
-            Text(
-              "Select an incident to view details",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textMutedSubtle,
-                fontSize: 14,
+      child: Builder(builder: (context) {
+        final themeProvider = context.watch<ThemeProvider>();
+        final isDark = themeProvider.isDarkTheme;
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.select_all_rounded, size: 52, color: isDark ? AppColors.textMutedIcon : AppColors.lightTextMutedIcon),
+              const SizedBox(height: 16),
+              Text(
+                "Select an incident to view details",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? AppColors.textMutedSubtle : AppColors.lightTextMutedSubtle,
+                  fontSize: 14,
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
-  Widget _buildDetailCard(Incident inc, Color accent) {
+  Widget _buildDetailCard(BuildContext context, Incident inc, Color accent) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.isDarkTheme;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.darkCardBg,
+        color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderDark),
+        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.lightBorderDark),
       ),
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -97,8 +107,8 @@ class IncidentDetailPanel extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppColors.darkActiveBg,
-                      border: Border.all(color: AppColors.borderBlueLight),
+                      color: isDark ? AppColors.darkActiveBg : AppColors.lightActiveBg,
+                      border: Border.all(color: isDark ? AppColors.borderBlueLight : AppColors.lightBorderSecondary),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
@@ -116,8 +126,8 @@ class IncidentDetailPanel extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                     decoration: BoxDecoration(
-                      color: accent.withOpacity(0.12),
-                      border: Border.all(color: accent.withOpacity(0.35)),
+                      color: accent.withOpacity(isDark ? 0.12 : 0.15),
+                      border: Border.all(color: accent.withOpacity(isDark ? 0.35 : 0.4)),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
@@ -144,11 +154,11 @@ class IncidentDetailPanel extends StatelessWidget {
                           color: accent,
                         ),
                       ),
-                      const Text(
+                      Text(
                         "ANOMALY SCORE",
                         style: TextStyle(
                           fontSize: 9.2,
-                          color: AppColors.textMutedDark,
+                          color: isDark ? AppColors.textMutedDark : AppColors.lightTextMutedDark,
                           letterSpacing: 0.6,
                         ),
                       ),
@@ -160,9 +170,9 @@ class IncidentDetailPanel extends StatelessWidget {
 
             // Detail Fields Grid
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: AppColors.borderDark),
+                  top: BorderSide(color: isDark ? AppColors.borderDark : AppColors.lightBorderDark),
                 ),
               ),
               child: GridView.count(
@@ -180,14 +190,14 @@ class IncidentDetailPanel extends StatelessWidget {
             ),
 
             // HTTP Request Section
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 6),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
               child: Text(
                 "HTTP REQUEST",
                 style: TextStyle(
                   fontSize: 9.5,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textMutedDark,
+                  color: isDark ? AppColors.textMutedDark : AppColors.lightTextMutedDark,
                   letterSpacing: 0.7,
                 ),
               ),
@@ -196,19 +206,19 @@ class IncidentDetailPanel extends StatelessWidget {
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.darkVeryLight,
+                color: isDark ? AppColors.darkVeryLight : AppColors.lightSecondaryBg,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.darkSecondaryBg),
+                border: Border.all(color: isDark ? AppColors.darkSecondaryBg : AppColors.lightBorderSecondary),
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Text(
                   inc.httpRequest,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Courier New',
                     fontSize: 12.8,
                     height: 1.65,
-                    color: AppColors.textLight,
+                    color: isDark ? AppColors.textLight : AppColors.lightTextLabel,
                   ),
                 ),
               ),
@@ -220,30 +230,34 @@ class IncidentDetailPanel extends StatelessWidget {
   }
 
   Widget _detailField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9,
-              color: AppColors.textMutedDark,
-              letterSpacing: 0.6,
+    return Builder(builder: (context) {
+      final themeProvider = context.watch<ThemeProvider>();
+      final isDark = themeProvider.isDarkTheme;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 9,
+                color: isDark ? AppColors.textMutedDark : AppColors.lightTextMutedDark,
+                letterSpacing: 0.6,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13.2,
-              color: AppColors.textLight,
-              fontFamily: 'Courier New',
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 13.2,
+                color: isDark ? AppColors.textLight : AppColors.lightTextLabel,
+                fontFamily: 'Courier New',
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 }

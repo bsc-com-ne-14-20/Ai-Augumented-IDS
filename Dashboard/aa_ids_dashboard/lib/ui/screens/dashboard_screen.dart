@@ -423,7 +423,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const Text(
                         'OVERVIEW',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 18,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textLabel,
                           letterSpacing: 1,
