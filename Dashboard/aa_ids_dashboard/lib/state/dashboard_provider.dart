@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:aa_ids_dashboard/api/dashboard_api.dart';
+import 'package:aa_ids_dashboard/api/alert_socket_service.dart';
 import 'package:aa_ids_dashboard/models/dashboard_models.dart';
 
 class DashboardProvider extends ChangeNotifier {
-  // API instance
+  // API instances
   final DashboardApi _dashboardApi = DashboardApi();
+  late final AlertSocketService _socketService;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // STATE VARIABLES
@@ -44,6 +46,11 @@ class DashboardProvider extends ChangeNotifier {
   String? _verdictFilter;
   String? _severityFilter;
 
+  // Socket/Real-time
+  bool _socketConnected = false;
+  bool _socketEnabled = false;
+  String? _socketError;
+
   // ═══════════════════════════════════════════════════════════════════════════
   // GETTERS
   // ═══════════════════════════════════════════════════════════════════════════
@@ -82,6 +89,11 @@ class DashboardProvider extends ChangeNotifier {
   // Filters
   String? get verdictFilter => _verdictFilter;
   String? get severityFilter => _severityFilter;
+
+  // Socket/Real-time
+  bool get socketConnected => _socketConnected;
+  bool get socketEnabled => _socketEnabled;
+  String? get socketError => _socketError;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // API METHODS
@@ -198,7 +210,89 @@ class DashboardProvider extends ChangeNotifier {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // HELPER METHODS
+  // SOCKET.IO REAL-TIME METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Initialize and connect to real-time alert socket
+  /// Call this in your main app initialization (e.g., in initState of root widget)
+  void initializeRealtimeAlerts() {
+    try {
+      _socketService = AlertSocketService();
+      _socketService.initializeSocket(_handleNewAlert);
+      _socketEnabled = true;
+      _socketError = null;
+      print('[Provider] Real-time alerts initialized');
+      notifyListeners();
+    } catch (e) {
+      _socketError = e.toString();
+      _socketEnabled = false;
+      print('[Provider] Error initializing real-time alerts: $e');
+      notifyListeners();
+    }
+  }
+
+  /// Handle new alert from socket and add to incidents list
+  void _handleNewAlert(DetectionResult result) {
+    try {
+      _socketConnected = _socketService.isConnected;
+      
+      // Convert to Incident and prepend to list
+      final incident = _dashboardApi.detectionResultToIncident(result);
+      _incidents.insert(0, incident);
+      _detectionResults.insert(0, result);
+      _totalAlerts++;
+
+      print('[Provider] New alert added to incidents list: ${result.alertId}');
+      notifyListeners();
+
+      // Optional: Show notification for high/critical severity
+      if (result.severity != null && 
+          (result.severity!.toLowerCase() == 'critical' || 
+           result.severity!.toLowerCase() == 'high')) {
+        print('[Provider] ⚠️ HIGH SEVERITY ALERT: ${result.severity}');
+      }
+    } catch (e) {
+      print('[Provider] Error handling new alert: $e');
+    }
+  }
+
+  /// Connect to real-time alert stream
+  void connectRealtimeAlerts() {
+    if (_socketEnabled) {
+      _socketService.connect();
+    }
+  }
+
+  /// Disconnect from real-time alert stream
+  void disconnectRealtimeAlerts() {
+    if (_socketEnabled) {
+      _socketService.disconnect();
+      _socketConnected = false;
+      notifyListeners();
+    }
+  }
+
+  /// Subscribe to alerts of specific severity
+  void subscribeToSeverity(String severity) {
+    if (_socketEnabled && _socketService.isConnected) {
+      _socketService.requestAlertsForSeverity(severity);
+    }
+  }
+
+  /// Subscribe to alerts of specific type
+  void subscribeToAlertType(String alertType) {
+    if (_socketEnabled && _socketService.isConnected) {
+      _socketService.subscribeToAlertType(alertType);
+    }
+  }
+
+  /// Unsubscribe from specific alert type
+  void unsubscribeFromAlertType(String alertType) {
+    if (_socketEnabled && _socketService.isConnected) {
+      _socketService.unsubscribeFromAlertType(alertType);
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Go to next page
@@ -276,5 +370,14 @@ class DashboardProvider extends ChangeNotifier {
     _verdictFilter = null;
     _severityFilter = null;
     notifyListeners();
+  }
+
+  /// Dispose of all resources including socket connection
+  /// Call this when the provider is being destroyed
+  void dispose() {
+    if (_socketEnabled) {
+      _socketService.dispose();
+    }
+    super.dispose();
   }
 }
