@@ -18,3 +18,7 @@ venv/
 models/
 .env
 SecLists/
+baseline_csic_only/*.pkl
+data/augmented/*.csv
+data/**/*.csv
+**/*.pkl
