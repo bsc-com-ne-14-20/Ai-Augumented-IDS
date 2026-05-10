@@ -1,0 +1,77 @@
+nohup: ignoring input
+
+============================================================
+  AA-IDS Attack Generator — SecLists Payloads
+============================================================
+
+[SQLI] 445 payloads × 3 endpoints
+  → 50 requests sent | last status: 401
+  → 100 requests sent | last status: 500
+  → 150 requests sent | last status: 200
+  → 200 requests sent | last status: 401
+  → 250 requests sent | last status: 500
+  → 300 requests sent | last status: 200
+  → 350 requests sent | last status: 401
+  → 400 requests sent | last status: 500
+  → 450 requests sent | last status: 200
+  → 500 requests sent | last status: 500
+  → 550 requests sent | last status: 200
+  → 600 requests sent | last status: 200
+  → 650 requests sent | last status: 401
+  → 700 requests sent | last status: 200
+  → 750 requests sent | last status: 200
+  → 800 requests sent | last status: 401
+  → 850 requests sent | last status: 200
+  → 900 requests sent | last status: 200
+  → 950 requests sent | last status: 500
+  → 1000 requests sent | last status: 200
+  → 1050 requests sent | last status: 200
+  → 1100 requests sent | last status: 401
+  → 1150 requests sent | last status: 200
+  → 1200 requests sent | last status: 200
+  → 1250 requests sent | last status: 401
+  → 1300 requests sent | last status: 500
+  ✓ SQLI complete — 1335 requests logged
+
+[XSS] 205 payloads × 2 endpoints
+  → 50 requests sent | last status: 200
+  → 100 requests sent | last status: 200
+  → 150 requests sent | last status: 200
+  → 200 requests sent | last status: 200
+  → 250 requests sent | last status: 200
+  → 300 requests sent | last status: 200
+  → 350 requests sent | last status: 200
+  → 400 requests sent | last status: 200
+  ✓ XSS complete — 410 requests logged
+
+[PATH_TRAVERSAL] 600 payloads × 2 endpoints
+  → 50 requests sent | last status: 403
+  → 100 requests sent | last status: 403
+  → 150 requests sent | last status: 400
+  → 200 requests sent | last status: 200
+  → 250 requests sent | last status: 403
+  → 300 requests sent | last status: 403
+  → 350 requests sent | last status: 403
+  → 400 requests sent | last status: 403
+  → 450 requests sent | last status: 200
+  → 500 requests sent | last status: 403
+  → 550 requests sent | last status: 200
+  → 600 requests sent | last status: 200
+  → 650 requests sent | last status: 403
+  → 700 requests sent | last status: 200
+  → 750 requests sent | last status: 200
+  → 800 requests sent | last status: 200
+  → 850 requests sent | last status: 200
+  → 900 requests sent | last status: 200
+  → 950 requests sent | last status: 403
+  → 1000 requests sent | last status: 200
+  → 1050 requests sent | last status: 403
+  → 1100 requests sent | last status: 403
+  → 1150 requests sent | last status: 403
+  → 1200 requests sent | last status: 403
+  ✓ PATH_TRAVERSAL complete — 1200 requests logged
+
+============================================================
+  ✓ Total: 2945 attack requests logged
+  ✓ Log  : /home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_data/raw/juice_shop_20260510.jsonl
+============================================================
