@@ -152,7 +152,10 @@ class IDSController:
             }
 
         # ── STAGE 3: XGBoost (multi-class) ───────────────────────
-        xgb_input   = self._prepare_xgb_input(row)
+        # Use raw unscaled features for XGBoost
+        raw_features = row.get('_raw', row.to_dict())
+        raw_row      = pd.Series(raw_features) if isinstance(raw_features, dict) else pd.Series(raw_features.to_dict())
+        xgb_input    = self._prepare_xgb_input(raw_row)
         xgb_proba   = self.xgb.predict_proba(xgb_input)[0]
         xgb_pred    = int(np.argmax(xgb_proba))
         attack_type = self.reverse_mapping[xgb_pred]
@@ -184,25 +187,21 @@ class IDSController:
         """
         df = pd.DataFrame([row])
 
-        # Engineered features
-        df['sqli_equals_density']        = df.get('query_num_equals',  0) / (df.get('query_length', 0) + 1e-5)
-        df['sqli_special_ratio']         = df.get('query_num_special', 0) / (df.get('query_length', 0) + 1e-5)
-        df['xss_special_ratio']          = df.get('query_num_special', 0) / (df.get('query_length', 0) + 1e-5)
-        df['traversal_depth_ratio']      = df.get('url_path_depth',   0) / (df.get('url_length',   0) + 1e-5)
-        df['traversal_dots_ratio']       = df.get('url_num_dots',     0) / (df.get('url_length',   0) + 1e-5)
-        df['encoding_intensity']         = (df.get('url_num_percent',   0) +
-                                            df.get('query_num_percent', 0) +
-                                            df.get('body_num_percent',  0))
-        df['double_encoding_flag']       = (df.get('url_has_double_encoding', 0) > 0).astype(int)
-        df['high_entropy_query']         = (df.get('query_entropy', 0) > 4.5).astype(int)
-        df['high_entropy_body']          = (df.get('body_entropy',  0) > 4.5).astype(int)
-        df['entropy_spike_query']        = (df.get('query_entropy', 0) - df.get('url_entropy', 0)).clip(lower=0)
-        df['method_body_mismatch']       = ((df.get('method_get',          0) > 0) &
-                                            (df.get('body_length',         0) > 20)).astype(int)
-        df['post_no_content_type']       = ((df.get('method_post',         0) > 0) &
-                                            (df.get('content_type_is_none',0) > 0)).astype(int)
-        df['special_char_density_query'] = df.get('query_num_special', 0) / (df.get('query_length', 0) + 1e-5)
-        df['special_char_density_body']  = df.get('body_num_special',  0) / (df.get('body_length',  0) + 1e-5)
+        # Engineered features — must match retrain_xgb.py add_engineered()
+        def gcol(col):
+            return df[col] if col in df.columns else 0
+
+        df['special_ratio_query'] = gcol('query_num_special') / (gcol('query_length') + 1e-5)
+        df['special_ratio_body']  = gcol('body_num_special')  / (gcol('body_length')  + 1e-5)
+        df['percent_ratio_query'] = gcol('query_num_percent') / (gcol('query_length') + 1e-5)
+        df['dots_ratio_url']      = gcol('url_num_dots')      / (gcol('url_length')   + 1e-5)
+        df['semicolon_ratio']     = gcol('body_num_semicolons')/ (gcol('body_length') + 1e-5)
+        df['quotes_ratio']        = gcol('body_num_quotes')   / (gcol('body_length')  + 1e-5)
+        df['entropy_diff']        = gcol('query_entropy')     - gcol('url_entropy')
+        df['high_query_entropy']  = (gcol('query_entropy')    > 4.0).astype(int)
+        df['high_body_entropy']   = (gcol('body_entropy')     > 4.0).astype(int)
+        df['deep_path']           = (gcol('url_path_depth')   > 4).astype(int)
+        df['many_dots']           = (gcol('url_num_dots')     > 3).astype(int)
 
         # Align to trained feature set
         for col in self.xgb_features:
