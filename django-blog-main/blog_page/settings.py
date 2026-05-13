@@ -136,8 +136,15 @@ LOGIN_REDIRECT_URL = 'feature-home'
 LOGIN_URL = 'auth-login'
 #LOGOUT_REDIRECT_URL = 'auth-login'
 
-#deployment settings
-SECURE_HSTS_SECONDS = 31536000
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+
+# Only use HTTPS settings in production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+else:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
