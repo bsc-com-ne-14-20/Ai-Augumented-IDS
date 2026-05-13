@@ -4,13 +4,128 @@
 
 {% block content %}
   <main class="py-5">
-    <h1 class="mb-3">{{ title|default:"About" }}</h1>
-    <p class="lead text-muted">This is a short about page for the blog. Update the content as needed.</p>
+    <div class="container">
+      <!-- Header Section -->
+      <h1 class="mb-3 display-4">About TechBytes Blog</h1>
+      <p class="lead text-muted mb-5">
+        Your go-to resource for cutting-edge insights in Information Technology, Cybersecurity, and Digital Innovation.
+      </p>
 
-    <section class="mt-4">
-      <h2 class="h5">About the author</h2>
-      <p class="text-muted">Add author info or site purpose here.</p>
-    </section>
+      <!-- Mission Section -->
+      <section class="mt-5 mb-5">
+        <h2 class="h3 mb-3">Our Mission</h2>
+        <p>
+          TechBytes Blog is dedicated to delivering high-quality, practical content for IT professionals, developers, 
+          and technology enthusiasts. We believe in making complex technical concepts accessible to everyone, from 
+          beginners to seasoned experts. Our mission is to empower individuals with knowledge that drives innovation 
+          and career growth in the ever-evolving tech landscape.
+        </p>
+      </section>
+
+      <!-- Topics Covered Section -->
+      <section class="mt-5 mb-5">
+        <h2 class="h3 mb-3">What We Cover</h2>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <h5 class="text-primary">🔒 Cybersecurity & InfoSec</h5>
+            <p class="text-muted">
+              Threat analysis, vulnerability management, incident response, network security, and best practices 
+              for protecting your digital assets.
+            </p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <h5 class="text-primary">💻 Software Development</h5>
+            <p class="text-muted">
+              Programming languages, frameworks, design patterns, code optimization, and software architecture trends.
+            </p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <h5 class="text-primary">☁️ Cloud & Infrastructure</h5>
+            <p class="text-muted">
+              AWS, Azure, Google Cloud, Kubernetes, DevOps practices, infrastructure-as-code, and containerization.
+            </p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <h5 class="text-primary">🤖 AI & Machine Learning</h5>
+            <p class="text-muted">
+              Artificial intelligence, deep learning, data science, natural language processing, and emerging AI applications.
+            </p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <h5 class="text-primary">🔐 Compliance & Privacy</h5>
+            <p class="text-muted">
+              GDPR, HIPAA, SOC 2, risk management, data privacy, regulatory requirements, and security frameworks.
+            </p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <h5 class="text-primary">📊 Database & Data Engineering</h5>
+            <p class="text-muted">
+              SQL, NoSQL, data pipelines, big data technologies, database optimization, and analytics platforms.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why Choose Us Section -->
+      <section class="mt-5 mb-5">
+        <h2 class="h3 mb-3">Why Choose TechBytes?</h2>
+        <ul class="list-unstyled">
+          <li class="mb-3">
+            <strong>✓ Expert Authors:</strong> Our team consists of seasoned IT professionals with real-world experience 
+            in their respective domains.
+          </li>
+          <li class="mb-3">
+            <strong>✓ Practical Insights:</strong> We focus on actionable advice and solutions you can implement immediately.
+          </li>
+          <li class="mb-3">
+            <strong>✓ Regular Updates:</strong> Fresh content every week covering the latest trends and technologies.
+          </li>
+          <li class="mb-3">
+            <strong>✓ Community-Driven:</strong> Engage with like-minded professionals and share your experiences.
+          </li>
+          <li class="mb-3">
+            <strong>✓ Ad-Free Experience:</strong> Enjoy quality content without intrusive advertisements or paywalls.
+          </li>
+        </ul>
+      </section>
+
+      <!-- About the Team Section -->
+      <section class="mt-5 mb-5">
+        <h2 class="h3 mb-3">About the Author</h2>
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h5 class="card-title">Tech Enthusiast & Security Professional</h5>
+            <p class="card-text">
+              With over a decade of experience in information technology and cybersecurity, our team brings deep expertise 
+              across multiple domains. We're passionate about demystifying complex technical concepts and helping others 
+              navigate the rapidly changing world of technology. When we're not writing, we're staying updated with the 
+              latest industry developments and contributing to open-source projects.
+            </p>
+            <p class="card-text">
+              <small class="text-muted">
+                <strong>Expertise:</strong> Cybersecurity, Cloud Architecture, DevOps, Python, Kubernetes, Network Security, 
+                Risk Management, and Digital Transformation.
+              </small>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact Section -->
+      <section class="mt-5 pb-5">
+        <h2 class="h3 mb-3">Get In Touch</h2>
+        <p class="mb-3">
+          Have a question, suggestion, or topic you'd like us to cover? We'd love to hear from you! Reach out to us 
+          through the contact form or connect with us on social media. Whether you're looking to collaborate, 
+          contribute a guest post, or just want to say hello, we're always happy to connect with our community.
+        </p>
+        <p>
+          <a href="{% url 'feature-home' %}" class="btn btn-primary">
+            Back to Blog
+          </a>
+        </p>
+      </section>
+    </div>
   </main>
 {% endblock %}
 
