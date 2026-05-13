@@ -163,3 +163,112 @@ Running in background — go study! Ctrl+C to stop.
 
 if __name__ == "__main__":
     run(target_count=5000)
+
+def run_targeted(target_count: int = 10000):
+    """Generate targeted normal traffic for patterns the model struggles with."""
+    session = requests.Session()
+
+    targeted = [
+        # Simple GET pages - no query, no body
+        {"method": "GET",  "path": "/",                "params": {}, "body": None},
+        {"method": "GET",  "path": "/products",         "params": {}, "body": None},
+        {"method": "GET",  "path": "/about",            "params": {}, "body": None},
+        {"method": "GET",  "path": "/contact",          "params": {}, "body": None},
+        {"method": "GET",  "path": "/home",             "params": {}, "body": None},
+        {"method": "GET",  "path": "/index.html",       "params": {}, "body": None},
+        {"method": "GET",  "path": "/dashboard",        "params": {}, "body": None},
+        {"method": "GET",  "path": "/profile",          "params": {}, "body": None},
+        # Search with normal terms
+        {"method": "GET",  "path": "/search",           "params": {"q": "laptop"}, "body": None},
+        {"method": "GET",  "path": "/search",           "params": {"q": "shoes"}, "body": None},
+        {"method": "GET",  "path": "/search",           "params": {"q": "phone"}, "body": None},
+        {"method": "GET",  "path": "/search",           "params": {"q": "book"}, "body": None},
+        {"method": "GET",  "path": "/search",           "params": {"q": "shirt"}, "body": None},
+        {"method": "GET",  "path": "/products/search",  "params": {"q": "apple"}, "body": None},
+        {"method": "GET",  "path": "/products/search",  "params": {"q": "juice"}, "body": None},
+        {"method": "GET",  "path": "/api/products",     "params": {"page": "1"}, "body": None},
+        {"method": "GET",  "path": "/api/products",     "params": {"page": "2"}, "body": None},
+        # POST login - normal credentials
+        {"method": "POST", "path": "/login",            "params": {}, "body": "username=john&password=pass123", "ct": "application/x-www-form-urlencoded"},
+        {"method": "POST", "path": "/login",            "params": {}, "body": "username=alice&password=secret", "ct": "application/x-www-form-urlencoded"},
+        {"method": "POST", "path": "/signin",           "params": {}, "body": "email=user@test.com&password=pass", "ct": "application/x-www-form-urlencoded"},
+        {"method": "POST", "path": "/api/login",        "params": {}, "body": '{"email":"user@test.com","password":"pass123"}', "ct": "application/json"},
+        {"method": "POST", "path": "/rest/user/login",  "params": {}, "body": '{"email":"admin@test.com","password":"admin"}', "ct": "application/json"},
+        # POST register
+        {"method": "POST", "path": "/register",         "params": {}, "body": "username=newuser&email=new@test.com&password=pass123", "ct": "application/x-www-form-urlencoded"},
+        {"method": "POST", "path": "/api/users",        "params": {}, "body": '{"name":"John","email":"john@test.com"}', "ct": "application/json"},
+        # GET with pagination
+        {"method": "GET",  "path": "/products",         "params": {"page": "1", "limit": "10"}, "body": None},
+        {"method": "GET",  "path": "/products",         "params": {"page": "2", "limit": "10"}, "body": None},
+        {"method": "GET",  "path": "/api/items",        "params": {"offset": "0", "limit": "20"}, "body": None},
+        # GET specific resources
+        {"method": "GET",  "path": "/products/1",       "params": {}, "body": None},
+        {"method": "GET",  "path": "/products/42",      "params": {}, "body": None},
+        {"method": "GET",  "path": "/users/profile",    "params": {}, "body": None},
+        {"method": "GET",  "path": "/api/v1/products",  "params": {}, "body": None},
+        {"method": "GET",  "path": "/api/v2/users",     "params": {}, "body": None},
+    ]
+
+    print(f"""
+╔══════════════════════════════════════════════════════╗
+  Targeted Normal Traffic Generator
+  Target : {target_count} requests
+  Focus  : Simple GET/POST patterns model struggles with
+╚══════════════════════════════════════════════════════╝
+""")
+
+    count = 0
+    while count < target_count:
+        req = random.choice(targeted)
+        session.headers.update({
+            "User-Agent":      random.choice(USER_AGENTS),
+            "Accept":          "application/json, text/html, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+        })
+        if req.get("ct"):
+            session.headers["Content-Type"] = req["ct"]
+
+        try:
+            if req["method"] == "GET":
+                r = session.get(f"{TARGET}{req['path']}", params=req["params"], timeout=3)
+                query_string = "&".join(f"{k}={v}" for k, v in req["params"].items())
+                body_str = ""
+            else:
+                body = req.get("body", "")
+                ct   = req.get("ct", "application/x-www-form-urlencoded")
+                if ct == "application/json":
+                    r = session.post(f"{TARGET}{req['path']}", data=body, timeout=3)
+                else:
+                    r = session.post(f"{TARGET}{req['path']}", data=body, timeout=3)
+                query_string = ""
+                body_str = body or ""
+
+            record = {
+                "timestamp":    datetime.now(timezone.utc).isoformat(),
+                "source_app":   "targeted_normal",
+                "label":        "NORMAL",
+                "method":       req["method"],
+                "path":         req["path"],
+                "query_string": query_string,
+                "full_path":    req["path"] + (f"?{query_string}" if query_string else ""),
+                "headers":      dict(r.request.headers),
+                "cookie":       r.request.headers.get("Cookie", ""),
+                "body":         body_str,
+                "body_length":  len(body_str),
+                "status_code":  r.status_code,
+                "request_id":   hashlib.md5(f"{req['path']}{query_string}{body_str}".encode()).hexdigest()[:12],
+            }
+            log_record(record)
+            count += 1
+            if count % 500 == 0:
+                print(f"  ✓ {count}/{target_count} targeted normal requests logged")
+
+        except Exception:
+            pass
+
+        time.sleep(random.uniform(0.01, 0.05))
+
+    print(f"\n✓ Done! {count} targeted normal requests logged")
+
+if __name__ == "__main__":
+    run_targeted(target_count=10000)

@@ -3,7 +3,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 ROOT = Path(__file__).parent.parent
-scaler = joblib.load(ROOT / "data/final/scaler.pkl")
+scaler = joblib.load(ROOT / "data/augmented/scaler_augmented.pkl")
 
 SQLI_PATTERN = re.compile(r"(\bOR\b|\bAND\b|\bUNION\b|\bSELECT\b|\bDROP\b|1=1|'--|--|;--)", re.IGNORECASE)
 XSS_PATTERN = re.compile(r"(<script|javascript:|onerror=|alert\(|document\.cookie)", re.IGNORECASE)

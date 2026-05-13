@@ -81,8 +81,11 @@ def analyze(request: AnalyzeRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=503, detail="Models not loaded yet")
 
     # ── 1. Extract features ───────────────────────────────────────
-    features_df = extract_features(request.dict())
-    features    = features_df.iloc[0].to_dict()
+    features_df, features_raw_df = extract_features(request.dict())
+    features     = features_df.iloc[0].to_dict()
+    features_raw = features_raw_df.iloc[0].to_dict()
+    # Pass raw unscaled features for XGBoost
+    features['_raw'] = features_raw
 
     # Add raw fields CRS needs
     features["url"]          = request.url

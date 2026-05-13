@@ -1,0 +1,57 @@
+nohup: ignoring input
+
+============================================================
+  DVWA Automated Traffic Collector
+============================================================
+  ✓ Logged in, security set to low
+
+[NORMAL] Collecting 500 normal requests...
+  → 50 normal requests collected
+  → 100 normal requests collected
+  → 150 normal requests collected
+  → 200 normal requests collected
+  → 250 normal requests collected
+  → 300 normal requests collected
+  → 350 normal requests collected
+  → 400 normal requests collected
+  → 450 normal requests collected
+  → 500 normal requests collected
+  ✓ Normal collection done: 500 requests
+Traceback (most recent call last):
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_logger/dvwa_collector.py", line 300, in <module>
+    asyncio.run(main())
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_logger/dvwa_collector.py", line 273, in main
+    await login(page)
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_logger/dvwa_collector.py", line 133, in login
+    await page.fill("input[name='username']", "admin")
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/async_api/_generated.py", line 10493, in fill
+    await self._impl_obj.fill(
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 905, in fill
+    return await self._main_frame.fill(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_frame.py", line 607, in fill
+    await self._fill(**locals_to_params(locals()))
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_frame.py", line 619, in _fill
+    await self._channel.send("fill", self._timeout, locals_to_params(locals()))
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.fill: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("input[name='username']")
+    - locator resolved to <input size="20" type="text" name="username" class="loginInput"/>
+    - fill("admin")
+  - attempting fill action
+    - waiting for element to be visible, enabled and editable
+

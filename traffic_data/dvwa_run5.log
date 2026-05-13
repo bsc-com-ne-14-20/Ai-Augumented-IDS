@@ -1,0 +1,69 @@
+nohup: ignoring input
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+ProtocolError: Protocol error (Page.handleJavaScriptDialog): Internal server error, session closed.
+    at /home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/chromium/crConnection.js:111:57
+    at new Promise (<anonymous>)
+    at CRSession.send (/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/chromium/crConnection.js:110:12)
+    at Dialog._onHandle (/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/chromium/crPage.js:669:28)
+    at Dialog.dismiss (/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/dialog.js:59:16)
+    at Dialog.close (/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/dialog.js:65:18)
+    at DialogManager.dialogDidOpen (/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/dialog.js:85:14)
+    at FrameSession._onDialog (/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/chromium/crPage.js:662:45)
+    at CRSession.<anonymous> (/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/driver/package/lib/server/chromium/crPage.js:343:119)
+    at CRSession.emit (node:events:508:28) {
+  type: 'closed',
+  method: 'Page.handleJavaScriptDialog',
+  logs: undefined
+}
+
+Node.js v24.14.1
+
+============================================================
+  DVWA Automated Traffic Collector
+============================================================
+  ✓ Logged in, security set to low
+
+[NORMAL] Collecting 500 normal requests...
+  → 50 normal requests collected
+  → 100 normal requests collected
+  → 150 normal requests collected
+  → 200 normal requests collected
+  → 250 normal requests collected
+  → 300 normal requests collected
+  → 350 normal requests collected
+  → 400 normal requests collected
+Traceback (most recent call last):
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_logger/dvwa_collector.py", line 300, in <module>
+    asyncio.run(main())
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_logger/dvwa_collector.py", line 270, in main
+    await collect_normal(page, count=500)
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_logger/dvwa_collector.py", line 175, in collect_normal
+    await page.goto(f"{DVWA_URL}{path}")
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/async_api/_generated.py", line 9365, in goto
+    await self._impl_obj.goto(
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 552, in goto
+    return await self._main_frame.goto(**locals_to_params(locals()))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_frame.py", line 153, in goto
+    await self._channel.send(
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rashid/Documents/FYP/Ai-Augumented-IDS/venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "http://localhost:8081/vulnerabilities/xss_s/", waiting until "load"
+

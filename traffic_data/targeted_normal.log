@@ -1,0 +1,90 @@
+nohup: ignoring input
+
+╔══════════════════════════════════════════════════════╗
+  AA-IDS Auto Normal Traffic Generator
+  Target : 5000 normal requests
+  Log    : /home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_data/raw/juice_shop_20260510.jsonl
+╚══════════════════════════════════════════════════════╝
+Running in background — go study! Ctrl+C to stop.
+
+  ✓ 100/5000 normal requests logged
+  ✓ 200/5000 normal requests logged
+  ✓ 300/5000 normal requests logged
+  ✓ 400/5000 normal requests logged
+  ✓ 500/5000 normal requests logged
+  ✓ 600/5000 normal requests logged
+  ✓ 700/5000 normal requests logged
+  ✓ 800/5000 normal requests logged
+  ✓ 900/5000 normal requests logged
+  ✓ 1000/5000 normal requests logged
+  ✓ 1100/5000 normal requests logged
+  ✓ 1200/5000 normal requests logged
+  ✓ 1300/5000 normal requests logged
+  ✓ 1400/5000 normal requests logged
+  ✓ 1500/5000 normal requests logged
+  ✓ 1600/5000 normal requests logged
+  ✓ 1700/5000 normal requests logged
+  ✓ 1800/5000 normal requests logged
+  ✓ 1900/5000 normal requests logged
+  ✓ 2000/5000 normal requests logged
+  ✓ 2100/5000 normal requests logged
+  ✓ 2200/5000 normal requests logged
+  ✓ 2300/5000 normal requests logged
+  ✓ 2400/5000 normal requests logged
+  ✓ 2500/5000 normal requests logged
+  ✓ 2600/5000 normal requests logged
+  ✓ 2700/5000 normal requests logged
+  ✓ 2800/5000 normal requests logged
+  ✓ 2900/5000 normal requests logged
+  ✓ 3000/5000 normal requests logged
+  ✓ 3100/5000 normal requests logged
+  ✓ 3200/5000 normal requests logged
+  ✓ 3300/5000 normal requests logged
+  ✓ 3400/5000 normal requests logged
+  ✓ 3500/5000 normal requests logged
+  ✓ 3600/5000 normal requests logged
+  ✓ 3700/5000 normal requests logged
+  ✓ 3800/5000 normal requests logged
+  ✓ 3900/5000 normal requests logged
+  ✓ 4000/5000 normal requests logged
+  ✓ 4100/5000 normal requests logged
+  ✓ 4200/5000 normal requests logged
+  ✓ 4300/5000 normal requests logged
+  ✓ 4400/5000 normal requests logged
+  ✓ 4500/5000 normal requests logged
+  ✓ 4600/5000 normal requests logged
+  ✓ 4700/5000 normal requests logged
+  ✓ 4800/5000 normal requests logged
+  ✓ 4900/5000 normal requests logged
+  ✓ 5000/5000 normal requests logged
+
+✓ Done! 5000 normal requests logged to /home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_data/raw/juice_shop_20260510.jsonl
+
+╔══════════════════════════════════════════════════════╗
+  Targeted Normal Traffic Generator
+  Target : 10000 requests
+  Focus  : Simple GET/POST patterns model struggles with
+╚══════════════════════════════════════════════════════╝
+
+  ✓ 500/10000 targeted normal requests logged
+  ✓ 1000/10000 targeted normal requests logged
+  ✓ 1500/10000 targeted normal requests logged
+  ✓ 2000/10000 targeted normal requests logged
+  ✓ 2500/10000 targeted normal requests logged
+  ✓ 3000/10000 targeted normal requests logged
+  ✓ 3500/10000 targeted normal requests logged
+  ✓ 4000/10000 targeted normal requests logged
+  ✓ 4500/10000 targeted normal requests logged
+  ✓ 5000/10000 targeted normal requests logged
+  ✓ 5500/10000 targeted normal requests logged
+  ✓ 6000/10000 targeted normal requests logged
+  ✓ 6500/10000 targeted normal requests logged
+  ✓ 7000/10000 targeted normal requests logged
+  ✓ 7500/10000 targeted normal requests logged
+  ✓ 8000/10000 targeted normal requests logged
+  ✓ 8500/10000 targeted normal requests logged
+  ✓ 9000/10000 targeted normal requests logged
+  ✓ 9500/10000 targeted normal requests logged
+  ✓ 10000/10000 targeted normal requests logged
+
+✓ Done! 10000 targeted normal requests logged

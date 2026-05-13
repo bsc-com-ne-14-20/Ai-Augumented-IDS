@@ -1,0 +1,38 @@
+nohup: ignoring input
+
+============================================================
+  DVWA Automated Traffic Collector
+============================================================
+  ✓ Logged in, security set to low
+
+[NORMAL] Collecting 500 normal requests...
+  → 50 normal requests collected
+  → 100 normal requests collected
+  → 150 normal requests collected
+  → 200 normal requests collected
+  → 250 normal requests collected
+  → 300 normal requests collected
+  → 350 normal requests collected
+  → 400 normal requests collected
+  → 450 normal requests collected
+  → 500 normal requests collected
+  ✓ Normal collection done: 500 requests
+  ✓ Logged in, security set to low
+
+[SQLI] Collecting 20 SQLi attacks...
+  ✓ SQLi collection done
+  ✓ Logged in, security set to low
+
+[XSS] Collecting 15 XSS attacks...
+  ✓ XSS collection done
+  ✓ Logged in, security set to low
+
+[PATH_TRAVERSAL] Collecting 10 traversal attacks...
+  ✓ Path Traversal collection done
+
+============================================================
+  ✓ Collection complete!
+  ✓ Log: /home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_data/raw
+============================================================
+16909 /home/rashid/Documents/FYP/Ai-Augumented-IDS/traffic_data/raw/dvwa_20260510.jsonl
+
