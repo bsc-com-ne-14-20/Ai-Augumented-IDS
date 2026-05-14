@@ -129,11 +129,26 @@ class IDSController:
         crs_score  = crs_result.anomaly_score
 
         if crs_score >= self.crs_threshold:
+            # Map CRS category names to XGBoost label format
+            category_map = {
+                "SQL Injection":   "SQLI",
+                "SQLi":            "SQLI",
+                "XSS":             "XSS",
+                "Cross-Site Scripting": "XSS",
+                "Path Traversal":  "PATH_TRAVERSAL",
+                "Directory Traversal": "PATH_TRAVERSAL",
+                "Encoding Evasion":"OTHER",
+                "Scanner":         "OTHER",
+                "Entropy Anomaly": "OTHER",
+            }
+            crs_type = None
+            if crs_result.attack_types:
+                crs_type = category_map.get(crs_result.attack_types[0], "OTHER")
             return {
                 "verdict":     "ATTACK",
-                "attack_type": None,      # CRS doesn't classify type
+                "attack_type": crs_type,
                 "stage":       "CRS",
-                "confidence":  1.0,       # rule-based = deterministic
+                "confidence":  1.0,
                 "crs_score":   crs_score,
             }
 
@@ -146,7 +161,7 @@ class IDSController:
             return {
                 "verdict":     "NORMAL",
                 "attack_type": None,
-                "stage":       "Random Forest",
+                "stage":       "ML Model",
                 "confidence":  float(rf_proba[0]),
                 "crs_score":   crs_score,
             }
@@ -163,7 +178,7 @@ class IDSController:
         return {
             "verdict":     "ATTACK",
             "attack_type": attack_type,
-            "stage":       "XGBoost",
+            "stage":       "ML Model",
             "confidence":  float(np.max(xgb_proba)),
             "crs_score":   crs_score,
         }
