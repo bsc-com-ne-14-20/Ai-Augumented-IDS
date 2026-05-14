@@ -27,6 +27,7 @@ def extract_features(request: dict) -> pd.DataFrame:
     content_type = headers.get("content-type", "none") or "none"
     qd = unquote(query_string)
     bd = unquote(body)
+    ud = unquote(url)
     
     f = {}
     f["url_length"] = len(url)
@@ -41,15 +42,20 @@ def extract_features(request: dict) -> pd.DataFrame:
     f["url_entropy"] = shannon_entropy(url)
     f["url_has_risky_ext"] = 1 if RISKY_EXT.search(url) else 0
     f["url_has_double_encoding"] = 1 if "%25" in url.lower() else 0
+    # Check URL path itself for attack patterns (catches path-based attacks)
+    # URL path attack patterns — used below, NOT added as features
+    _url_has_sqli     = 1 if SQLI_PATTERN.search(ud) else 0
+    _url_has_xss      = 1 if XSS_PATTERN.search(ud)  else 0
+    _url_has_traversal= 1 if TRAVERSAL_PATTERN.search(ud) else 0
     f["query_length"] = len(query_string)
     f["query_num_params"] = query_string.count("&")+1 if query_string else 0
     f["query_num_equals"] = query_string.count("=")
     f["query_num_special"] = len(SPECIAL_CHARS.findall(qd))
     f["query_num_percent"] = query_string.count("%")
     f["query_entropy"] = shannon_entropy(query_string)
-    f["query_has_sqli"] = 1 if SQLI_PATTERN.search(qd) else 0
-    f["query_has_xss"] = 1 if XSS_PATTERN.search(qd) else 0
-    f["query_has_traversal"] = 1 if TRAVERSAL_PATTERN.search(qd) else 0
+    f["query_has_sqli"]     = 1 if (SQLI_PATTERN.search(qd)     or _url_has_sqli)      else 0
+    f["query_has_xss"]      = 1 if (XSS_PATTERN.search(qd)      or _url_has_xss)       else 0
+    f["query_has_traversal"]= 1 if (TRAVERSAL_PATTERN.search(qd) or _url_has_traversal) else 0
     f["query_has_encoding"] = 1 if "%" in query_string else 0
     f["query_is_empty"] = 1 if not query_string else 0
     f["body_length"] = len(body)
@@ -88,4 +94,4 @@ def extract_features(request: dict) -> pd.DataFrame:
     result = pd.DataFrame(scaled, columns=df.columns)
     # Clip extreme outliers caused by zero-variance features in training data
     result = result.clip(lower=-5, upper=5)
-    return result
+    return result, df  # (scaled, unscaled)
