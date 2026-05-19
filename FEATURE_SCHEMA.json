@@ -1,0 +1,13 @@
+{
+  "_comment": "Frozen 53-feature contract. Do NOT modify names, count, or order without PM approval and model retraining.",
+  "version": "1.0",
+  "feature_count": 53,
+  "groups": {
+    "url_features": 12,
+    "query_string_features": 11,
+    "body_payload_features": 13,
+    "http_method_features": 4,
+    "header_features": 13
+  },
+  "features": []
+}
