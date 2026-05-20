@@ -12,5 +12,24 @@ data/cleaned/csic_cleaned.csv
 __pycache__/
 *.pyc
 
+# Model artifacts (never commit)
+models/*.joblib
+models/*.pkl
+*.pkl
+data/final/*.pkl
 
-data/raw/cicids/
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Downloaded datasets
+web-application-attacks-datasets/
