@@ -1,4 +1,4 @@
-from http_feature_extractor import HTTPFeatureExtractor
+from backend.pipeline.http_feature_extractor import HTTPFeatureExtractor
 
 
 def get_user_input():
