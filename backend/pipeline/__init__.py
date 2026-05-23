@@ -1,1 +1,1 @@
-"""AA-IDS Data Pipeline Module"""
+"""pipeline package — preprocessor and orchestrator for the detection pipeline."""

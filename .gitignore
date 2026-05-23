@@ -3,7 +3,16 @@ data/raw/
 
 # Duplicate/intermediate cleaned files
 data/processed/
-data/cleaned/csic_cleaned.csv
+data/cleaned/
+
+# Large model files
+models/*.joblib
+models/*.pkl
+
+# Large feature files
+data/features/feature_matrix.csv
+data/final/train.csv
+data/final/test.csv
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
@@ -12,24 +21,5 @@ data/cleaned/csic_cleaned.csv
 __pycache__/
 *.pyc
 
-# Model artifacts (never commit)
-models/*.joblib
-models/*.pkl
-*.pkl
-data/final/*.pkl
-
-# Virtual environments
 venv/
-.venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Downloaded datasets
-web-application-attacks-datasets/
+aa_ids_backend/.venv/

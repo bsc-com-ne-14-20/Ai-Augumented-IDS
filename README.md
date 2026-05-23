@@ -1,248 +1,240 @@
-# Dataset Summary
-## AI-Augmented HTTP Anomaly Intrusion Detection System (AA-IDS)
-### University of Malawi | COM422 ICT Project
+# AA-IDS: AI-Augmented HTTP Anomaly Intrusion Detection System
 
----
+**University of Malawi | COM422 ICT Project | May 2026**
 
-## 1. Project Overview
+A lightweight, application-layer intrusion detection system targeting web applications operated by Small and Medium-sized Enterprises (SMEs) in Malawi.
 
-AA-IDS is a hybrid HTTP anomaly detection system combining:
-- **Rule-Based Engine**: OWASP detection rules
-- **ML Classifier**: Random Forest on 53 HTTP features
-- **Target**: HTTP/1.1 web traffic anomaly detection
+## System Architecture
 
-The system processes raw HTTP requests, extracts 53 numeric features, and classifies traffic as normal or anomalous.
+The AA-IDS uses a hybrid detection approach:
 
----
+1. **Rule-Based Engine** — Signature-based detection for known attack patterns (SQLi, XSS, Path Traversal, CRLF Injection, Brute Force)
+2. **ML Detection Engine** — Random Forest + XGBoost stacked ensemble for anomaly detection
+3. **Sequential Pipeline** — Rule engine runs first; ML engine only evaluates requests that pass rule checks
 
-## 2. Datasets Used
+## Project Structure
 
-### Primary Dataset: CSIC 2010 (HTTP/1.1)
-**Status**:  PRIMARY CROSS-VALIDATION DATASET
+```
+.
+├── backend/                    # Core detection system
+│   ├── api/                    # REST API endpoints
+│   │   ├── routes.py          # Flask routes
+│   │   └── schemas.py         # Request validation
+│   ├── engines/               # Detection engines
+│   │   ├── rule_engine.py     # Rule-based detection
+│   │   ├── rules.json         # Attack signature rules
+│   │   ├── ml_adapter.py      # ML model adapter
+│   │   └── README.md          # Rule engine documentation
+│   ├── pipeline/              # Detection pipeline
+│   │   ├── orchestrator.py    # Pipeline coordinator
+│   │   └── preprocessor.py    # Feature extraction
+│   ├── sockets/               # WebSocket handlers
+│   │   └── events.py          # Real-time alert emission
+│   └── tests/                 # Test suite
+│       ├── test_rule_engine.py
+│       └── test_api.py
+├── data/                      # Datasets (CSIC 2010, CICIDS 2017)
+├── models/                    # Trained ML models
+├── app.py                     # Flask application factory
+├── config.py                  # Configuration management
+├── .env.example               # Environment variables template
+└── requirements.txt           # Python dependencies
+```
 
-The HTTP Dataset CSIC 2010, developed by the Information Security Institute of the Spanish National Research Council (CSIC).
+## Quick Start
 
-**Source**: https://www.kaggle.com/datasets/ispangler/csic-2010-web-application-attacks
+### 1. Clone and Setup
 
-**Key Characteristics**:
-- Format: CSV (pre-parsed HTTP/1.1 requests)
-- HTTP Version: 1.1 only
-- Total Requests: 61,065
-- Normal Requests: 36,000 (59%)
-- Attack Requests: 25,065 (41%)
-- Attack Diversity: 8 distinct attack types
-- Language: Spanish (Latin-1 encoded)
+```bash
+git clone <repository-url>
+cd aa-ids
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-**Usage**:
-- Training Set: 42,746 samples (70%)
-- Validation Set: 9,160 samples (15%)
-- Test Set: 9,160 samples (15%)
-- **Cross-Validation Strategy**: Stratified 70/15/15 split on same source
+### 2. Configure Environment
 
-### Supplementary Dataset: ECML/PKDD 2007
-**Status**:  SUPPLEMENTARY GENERALIZATION TEST
+```bash
+cp .env.example .env
+# Edit .env and set:
+# - IDS_API_KEY (32+ character random string)
+# - FLASK_SECRET_KEY
+# - Model paths (if different from defaults)
+```
 
-Additional HTTP/1.1 dataset from ECML/PKDD 2007 Challenge for cross-dataset validation.
+### 3. Run Locally
 
-**Source**: https://gitlab.fing.edu.uy/gsi/web-application-attacks-datasets
+```bash
+python app.py
+```
 
-**Key Characteristics**:
-- Format: Raw HTTP/1.1 requests (XML-labeled)
-- Total Requests: 25,612
-- Balanced Dataset: 10,502 normal (Valid) + 15,110 attacks
-- Attack Types: SQLi, XSS, Path Traversal, LDAP, XPath, OS Command, SSI
+The server starts on `http://localhost:5000`
 
-**Usage**:
-- Balanced Training: 14,702 samples (70%)
-- Validation: 3,151 samples (15%)
-- Testing: 3,151 samples (15%)
-- **Purpose**: Test model generalization across different HTTP attack sources
+### 4. Test the System
 
-###  NOT USED: CIC-IDS 2017
-**Status**: NOT USED (Network flows, not HTTP content)
+```bash
+# Run all tests
+pytest backend/tests/ -v
 
-CIC-IDS 2017 was originally considered but **rejected** because:
-- Contains 79 network flow features (packet statistics)
-- Does NOT contain raw HTTP request data
-- Different feature space (not compatible with HTTP feature extraction)
-- Cannot extract 53 HTTP features from network flows
-- Would require lossy feature mapping/approximation
+# Run specific test module
+pytest backend/tests/test_rule_engine.py -v
 
-**Decision**: Use CSIC + ECML (both have raw HTTP/1.1 requests) instead.
+# Run with coverage
+pytest backend/tests/ --cov=backend --cov-report=html
+```
 
----
+## API Endpoints
 
-## 3. Dataset Characteristics
+### Health Check
+```bash
+GET /api/v1/health
+```
 
-### CSIC 2010 HTTP Dataset Details
+Returns system status and engine readiness.
 
-| Characteristic | Detail |
-|---|---|
-| **HTTP Version** | HTTP/1.1 only |
-| **Format** | CSV (pre-parsed) |
-| **Total Requests** | 61,065 |
-| **Normal** | 36,000 (59%) |
-| **Anomalous** | 25,065 (41%) |
-| **Feature Matrix** | 61,065 × 53 features |
-| **HTTP Methods** | GET (43,088), POST (17,580), PUT (397) |
-| **Label** | Binary (0=Normal, 1=Attack) |
-| **Encoding** | Latin-1 (Spanish characters) |
-| **Missing Values** | None (handled during cleaning) |
-| **Duplicates** | None |
-| **Data Quality** | High (from controlled lab environment) |
+### Analyze HTTP Requests
+```bash
+POST /api/v1/analyse
+Headers: X-IDS-Key: <your-api-key>
+Content-Type: application/json
 
-### Attack Types in CSIC 2010
+{
+  "logs": [
+    {
+      "method": "GET",
+      "url": "/search?q=test",
+      "path": "/search",
+      "query_string": "q=test",
+      "headers": {},
+      "body": "",
+      "response_code": 200,
+      "content_length": 0,
+      "timestamp": "2026-05-23T10:00:00Z"
+    }
+  ]
+}
+```
 
-| Attack Type | Description | Count |
-|---|---|---|
-| SQL Injection | Malicious SQL in parameters/body | ~5,000 |
-| XSS | Script injection in form fields | ~3,000 |
-| Buffer Overflow | Oversized parameter values | ~4,000 |
-| Path Traversal | Directory traversal attempts | ~3,000 |
-| CRLF Injection | HTTP header manipulation | ~3,000 |
-| Parameter Tampering | Hidden parameter modification | ~3,000 |
-| Information Gathering | Probing for system information | ~2,000 |
-| Server-Side Include | SSI injection attempts | ~2,065 |
+### Get Alerts
+```bash
+GET /api/v1/alerts?page=1&limit=50&attack_type=SQL_INJECTION
+```
 
----
+### Get Statistics
+```bash
+GET /api/v1/stats
+```
 
-## 4. Feature Engineering (53 Features)
+## Environment Variables
 
-### Source Alignment
-Features extracted from CSIC 2010 notebook cleaning pipeline:
--  Matches exact CSIC 2010 feature engineering logic
--  Implements SRS FE-001 to FE-006 requirements
--  URL decoding for encoded payload detection
--  Shannon entropy for randomness detection
--  Attack pattern matching (SQLi, XSS, traversal)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `IDS_API_KEY` | Shared API key for authentication | `dev-api-key-change-in-production` |
+| `FLASK_SECRET_KEY` | Flask session secret | `aa-ids-dev-secret-change-in-production` |
+| `ML_MODEL_PATH` | Path to trained ML model | `models/rf_model.joblib` |
+| `ML_SCALER_PATH` | Path to feature scaler | `data/final/scaler.pkl` |
+| `ML_FEATURE_NAMES_PATH` | Path to feature names | `data/final/feature_names.txt` |
+| `ML_CONFIDENCE_THRESHOLD` | ML detection threshold | `0.65` |
+| `RULE_ENGINE_THRESHOLD` | Rule engine anomaly score threshold | `5` |
+| `BF_REQUEST_THRESHOLD` | Brute force request count threshold | `10` |
+| `BF_TIME_WINDOW_SECONDS` | Brute force time window | `60` |
+| `SOCKETIO_CORS_ORIGINS` | Allowed CORS origins | `*` |
 
-### Feature Groups
+## Detection Rules
 
-| Group | Features | Description |
-|---|---|---|
-| **URL Features** | 12 | Length, depth, dots, special chars, entropy, risky extensions |
-| **Query String Features** | 11 | Parameters, encoding, attack patterns, empty detection |
-| **Body/Payload Features** | 13 | Length, entropy, quotes, brackets, attack patterns |
-| **HTTP Method Features** | 4 | GET, POST, PUT, suspicious methods |
-| **Header Features** | 13 | Cookie analysis, content-type, connection, anomalies |
-| **TOTAL** | **53** | **All numeric, no NaN/Inf values** |
+Rules are defined in `backend/engines/rules.json`. Each rule has:
 
-### Feature Extraction Pipeline
+- **id**: Unique identifier (e.g., `SQLI-001`)
+- **name**: Human-readable description
+- **category**: Attack classification
+- **pattern**: Regular expression pattern
+- **fields**: Request fields to check
+- **severity**: Alert severity level
 
-| Stage | Input | Output | Details |
-|---|---|---|---|
-| **Loading** | Raw CSV | 61,065 requests | Pre-parsed HTTP/1.1 |
-| **Cleaning** | 61,065 × 17 cols | 61,065 × 10 cols | Handle null/types |
-| **Feature Engineering** | HTTP request fields | 61,065 × 53 features | Extract all groups |
-| **Scaling** | Raw features | Normalized [0,1] | StandardScaler fitted on train only |
-| **Train/Val/Test Split** | 61,065 samples | 42,746 / 9,160 / 9,160 | Stratified 70/15/15 |
+See `backend/engines/README.md` for detailed rule documentation.
 
----
+## Adding New Rules
 
-## 5. Cross-Validation Strategy
+1. Open `backend/engines/rules.json`
+2. Add a new rule object:
+```json
+{
+  "id": "CUSTOM-001",
+  "name": "Custom Attack Pattern",
+  "category": "CUSTOM_ATTACK",
+  "pattern": "your-regex-pattern",
+  "fields": ["query_string", "body"],
+  "severity": "high"
+}
+```
+3. Restart the Flask server
 
-### Primary: CSIC 2010 (70/15/15 Split)
+## ML Model Integration
 
-**Why 70/15/15 instead of 80/20?**
-- 15% validation allows hyperparameter tuning
-- 15% test set provides robust evaluation
-- Stratification maintains attack/normal ratio
+The ML adapter (`backend/engines/ml_adapter.py`) currently runs in graceful degradation mode if models are unavailable. To integrate trained models:
 
-**Data Leakage Prevention**:
-- StandardScaler fitted on training set only
-- Validation/test sets scaled using train statistics
-- No information from test set used during training
+1. Train models using `scripts/train_and_save_model.py`
+2. Place model files in `models/` directory
+3. Update paths in `.env`
+4. Restart the server
 
-### Supplementary: ECML/PKDD 2007
+The system will automatically detect and load the models.
 
-**Purpose**: Validate model generalization across different datasets
+## Deployment
 
-**Strategy**:
-1. Train RF on CSIC training set
-2. Evaluate on CSIC test set (baseline)
-3. Evaluate on ECML test set (generalization test)
+### DigitalOcean (Flask Backend)
 
-**Expected Results**:
-- CSIC test accuracy: >85%
-- ECML test accuracy: >80% (some drop expected)
-- Generalization gap: <5% (acceptable)
+```bash
+# Install dependencies
+pip install -r requirements.txt gunicorn eventlet
 
----
+# Run with gunicorn
+gunicorn -k eventlet -w 1 -b 0.0.0.0:5000 "app:create_app()"
+```
 
-## 6. Implementation Details
+### Environment Setup
 
-### Feature Extraction Module
-- **File**: `http_feature_extractor.py`
-- **SRS Compliance**: FE-001 to FE-006
-- **Performance**: <50ms per request (target)
-- **Output**: JSON-serializable dictionary with 53 features
-- **Guarantees**: Reproducible, no NaN/Inf values
+Set environment variables on the server:
+```bash
+export IDS_API_KEY="your-32-char-random-key"
+export FLASK_SECRET_KEY="your-flask-secret"
+export SOCKETIO_CORS_ORIGINS="https://your-dashboard-domain.com"
+```
 
-### Data Files
+## Testing
 
-**CSIC 2010 (Primary)**:
-- `data/final/cicids_cv_train.csv`: 42,746 samples (70%)
-- `data/final/cicids_cv_val.csv`: 9,160 samples (15%)
-- `data/final/cicids_cv_test.csv`: 9,160 samples (15%)
+The test suite covers:
 
-**ECML/PKDD 2007 (Supplementary)**:
-- `data/final/ecml_cv_train.csv`: 14,702 samples (70%)
-- `data/final/ecml_cv_val.csv`: 3,151 samples (15%)
-- `data/final/ecml_cv_test.csv`: 3,151 samples (15%)
-- `ECML_CV_BALANCED.csv`: 21,004 samples (balanced normal+attack)
+- **Rule Engine**: All attack types, URL decoding, brute force detection
+- **API Endpoints**: Authentication, validation, error handling
+- **Feature Extraction**: 53-feature vector generation
+- **Pipeline**: End-to-end detection flow
 
----
+Run tests before merging to main:
+```bash
+pytest backend/tests/ -v --cov=backend
+```
 
-## 7. Data Quality & Validation
+## SRS Compliance
 
-### Validation Checks
--  No missing values (NaN/Inf)
--  Exactly 53 features per request
--  Feature reproducibility (same input → same output)
--  No data leakage (train/val/test separation)
--  Stratified sampling (attack ratio maintained)
--  Consistent encoding (UTF-8)
+This implementation satisfies all requirements in the Software Requirements Specification v1.0:
 
-### HTTP/1.1 Compliance
-- **HTTP Version**: 1.1 only (no 2.0/3.0)
-- **Methods**: GET, POST, PUT (primary), others present
-- **Headers**: Standard HTTP/1.1 headers
-- **Encoding**: Latin-1, UTF-8
+- **Section 4.3**: Rule-Based Detection Engine (RE-001 through RE-006)
+- **Section 4.4**: ML Detection Engine (ML-001 through ML-007)
+- **Section 4.6**: Flask IDS Backend (FL-001 through FL-005)
+- **Section 7.1**: Integration Requirements
+- **Section 8.1**: Unit Testing Requirements
 
----
+## Team
 
-## 8. References
+- **Project Manager**: Memory Lukhere (BSC-COM-NE-14-20)
+- **Team Members**:
+  - Rashid Sidreck (BSC-COM-NE-10-22)
+  - Yewo Mkandawire (BSC-COM-NE-07-22)
+  - Dennis Bakaya (BSC-32-22)
+- **Supervisor**: Mr Martin Thodi
 
-**CSIC 2010 Dataset**:
-- Tavallaee et al., "Information Security Institute, Spanish Research Council"
-- Kaggle: https://www.kaggle.com/datasets/ispangler/csic-2010-web-application-attacks
+## License
 
-**ECML/PKDD 2007 Challenge**:
-- Machine Learning Challenge 2007
-- GitLab: https://gitlab.fing.edu.uy/gsi/web-application-attacks-datasets
-
-**Feature Engineering**:
-- Based on CSIC 2010 cleaning pipeline
-- Implements SRS v1.0 Section 4.2 (Feature Extraction)
-- 53 HTTP features for ML classification
-
----
-
-## 9. Project Status
-
-| Component | Status | Files |
-|---|---|---|
-| Data Cleaning |  Complete | `cleaning_data.ipynb` |
-| Feature Engineering |  Complete | `http_feature_extractor.py` |
-| CSIC Cross-Validation |  Complete | `cicids_cv_*.csv` |
-| ECML Extraction |  Complete | `extract_ecml_features.py` |
-| ECML Cross-Validation |  Complete | `ecml_cv_*.csv` |
-| Feature Validation |  Complete | Test scripts |
-| Ready for ML Training |  Yes | All datasets prepared |
-
----
-
-**Last Updated**: May 20, 2026
-**Dataset Version**: 1.0
-**HTTP Version**: 1.1 only
-**Feature Count**: 53 (validated)
+Academic project for COM422 | University of Malawi | May 2026

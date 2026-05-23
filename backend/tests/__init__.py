@@ -1,1 +1,1 @@
-"""AA-IDS Backend Tests"""
+"""Test suite for AA-IDS backend."""
