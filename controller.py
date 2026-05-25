@@ -29,6 +29,10 @@ import os
 ROOT      = Path(__file__).parent
 MODEL_DIR = ROOT / "models"
 rf_model_path    = Path(os.environ.get("RF_MODEL_PATH",    MODEL_DIR / "rf_model.pkl"))
+rf_features_path = Path(os.environ.get("RF_FEATURES_PATH", MODEL_DIR / "rf_feature_names.pkl"))
+xgb_model_path    = Path(os.environ.get("XGB_MODEL_PATH",    MODEL_DIR / "xgb_model.pkl"))
+xgb_features_path = Path(os.environ.get("XGB_FEATURES_PATH", MODEL_DIR / "xgb_feature_names.pkl"))
+xgb_labels_path   = Path(os.environ.get("XGB_LABELS_PATH",   MODEL_DIR / "xgb_label_mapping.pkl"))
 
 CRS_THRESHOLD = 5   # same threshold yewo used
 
