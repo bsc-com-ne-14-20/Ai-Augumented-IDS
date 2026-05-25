@@ -24,16 +24,17 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+
 # ── Paths ─────────────────────────────────────────────────────────
 ROOT      = Path(__file__).parent
 MODEL_DIR = ROOT / "models"
+rf_model_path    = Path(os.environ.get("RF_MODEL_PATH",    MODEL_DIR / "rf_model.pkl"))
 
-CRS_THRESHOLD = 5   # same threshold used during training/evaluation
+CRS_THRESHOLD = 5   # same threshold yewo used
 
 
-# ══════════════════════════════════════════════════════════════════
+
 # CRS Rule Engine — imported inline so controller is self-contained
-# ══════════════════════════════════════════════════════════════════
 
 import sys
 sys.path.insert(0, "/home/rashid/Documents/FYP/Ai-Augumented-IDS/pipeline/rule_engine")
