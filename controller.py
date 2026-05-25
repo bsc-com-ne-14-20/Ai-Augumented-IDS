@@ -25,7 +25,7 @@ import pandas as pd
 from pathlib import Path
 import os
 
-# ── Paths ─────────────────────────────────────────────────────────
+# ── Paths
 ROOT      = Path(__file__).parent
 MODEL_DIR = ROOT / "models"
 rf_model_path    = Path(os.environ.get("RF_MODEL_PATH",    MODEL_DIR / "rf_model.pkl"))
@@ -103,9 +103,8 @@ class IDSController:
 
         print("[Controller] All models loaded.\n")
 
-    # ──────────────────────────────────────────────────────────────
+    
     # Main prediction entry point
-    # ──────────────────────────────────────────────────────────────
 
     def predict(self, features: dict) -> dict:
         """
