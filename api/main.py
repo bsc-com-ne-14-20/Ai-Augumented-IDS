@@ -3,9 +3,11 @@ import sys
 import os
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+import asyncio
+import json
 
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -38,6 +40,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── WebSocket Connection Manager (AL-003) ────────────────────────
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        print(f"[WS] Client connected. Total: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+        print(f"[WS] Client disconnected. Total: {len(self.active_connections)}")
+
+    async def broadcast(self, message: dict):
+        dead = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(json.dumps(message, default=str))
+            except Exception:
+                dead.append(connection)
+        for d in dead:
+            self.disconnect(d)
+
+manager = ConnectionManager()
+
 # ── Load models once at startup ───────────────────────────────────
 controller = None
 
@@ -52,6 +81,22 @@ def startup():
 # ══════════════════════════════════════════════════════════════════
 # Endpoints
 # ══════════════════════════════════════════════════════════════════
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time alert streaming to Flutter dashboard.
+    Implements AL-003 — emit alert event to all connected clients.
+    Connect at: ws://host:8000/ws
+    """
+    await manager.connect(websocket)
+    try:
+        # Send last 50 alerts on connect (reliability on reconnect)
+        while True:
+            await websocket.receive_text()  # keep connection alive
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 
 @app.get("/health")
 def health():
@@ -131,6 +176,26 @@ def analyze(request: AnalyzeRequest, db: Session = Depends(get_db)):
     db.commit()
 
     update_stats(db, {**result, "is_vpn": geo["is_vpn"]})
+
+    # ── AL-003: Broadcast to WebSocket clients ────────────────────
+    alert_event = {
+        "event":       "alert",
+        "request_id":  log.id,
+        "timestamp":   datetime.utcnow().isoformat(),
+        "method":      request.method,
+        "url":         request.url,
+        "query_string": request.query_string or "",
+        "is_attack":   result["verdict"] == "ATTACK",
+        "verdict":     result["verdict"],
+        "attack_type": result.get("attack_type"),
+        "stage":       result["stage"],
+        "confidence":  result["confidence"],
+        "crs_score":   result["crs_score"],
+        "country":     geo["country"],
+        "city":        geo["city"],
+        "is_vpn":      geo["is_vpn"],
+    }
+    asyncio.create_task(manager.broadcast(alert_event))
 
     return AnalyzeResponse(
         verdict        = result["verdict"],
