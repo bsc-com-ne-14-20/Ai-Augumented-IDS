@@ -109,7 +109,7 @@ def health():
 
 
 @app.post("/analyze", response_model=AnalyzeResponse)
-def analyze(request: AnalyzeRequest, db: Session = Depends(get_db)):
+async def analyze(request: AnalyzeRequest, db: Session = Depends(get_db)):
     """
     Analyze an incoming HTTP request through the full IDS pipeline.
 
