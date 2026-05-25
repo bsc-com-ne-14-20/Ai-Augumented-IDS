@@ -166,6 +166,15 @@ class IDSController:
             }
 
         # ── STAGE 2: Random Forest (binary) ──────────────────────
+        # ML-007: fallback to rule-engine-only if RF unavailable
+        if self.rf is None:
+            return {
+                "verdict":     "NORMAL",
+                "attack_type": None,
+                "stage":       "CRS-only (ML unavailable)",
+                "confidence":  0.5,
+                "crs_score":   crs_score,
+            }
         rf_input = self._prepare_rf_input(row)
         rf_proba = self.rf.predict_proba(rf_input)[0]  # [P(normal), P(attack)]
         rf_pred  = int(np.argmax(rf_proba))
