@@ -71,8 +71,8 @@ class IDSController:
         print("  ✓  CRS Rule Engine ready")
 
         # Stage 2 — Random Forest (binary: normal vs attack)
-        rf_model_path    = MODEL_DIR / "rf_model.pkl"
-        rf_features_path = MODEL_DIR / "rf_feature_names.pkl"
+        rf_model_path    = Path(os.environ.get("RF_MODEL_PATH",    str(MODEL_DIR / "rf_model.pkl")))
+        rf_features_path = Path(os.environ.get("RF_FEATURES_PATH", str(MODEL_DIR / "rf_feature_names.pkl")))
 
         if not rf_model_path.exists():
             raise FileNotFoundError(
@@ -85,9 +85,9 @@ class IDSController:
         print("  ✓  Random Forest ready")
 
         # Stage 3 — XGBoost (multi-class attack classification)
-        xgb_model_path    = MODEL_DIR / "xgb_model.pkl"
-        xgb_features_path = MODEL_DIR / "xgb_feature_names.pkl"
-        xgb_labels_path   = MODEL_DIR / "xgb_label_mapping.pkl"
+        xgb_model_path    = Path(os.environ.get("XGB_MODEL_PATH",    str(MODEL_DIR / "xgb_model.pkl")))
+        xgb_features_path = Path(os.environ.get("XGB_FEATURES_PATH", str(MODEL_DIR / "xgb_feature_names.pkl")))
+        xgb_labels_path   = Path(os.environ.get("XGB_LABELS_PATH",   str(MODEL_DIR / "xgb_label_mapping.pkl")))
 
         if not xgb_model_path.exists():
             raise FileNotFoundError(
