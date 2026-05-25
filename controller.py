@@ -63,44 +63,53 @@ class IDSController:
         self._load_models()
 
     def _load_models(self):
-        """Load all models into memory. Called once at startup."""
+        """Load all models into memory. Called once at startup.
+        Falls back to rule-engine-only mode if ML models are unavailable (ML-007).
+        """
         print("[Controller] Loading models...")
 
-        # Stage 1 — CRS Rule Engine (stateless, no pkl needed)
-        self.crs = CRSEngine(threshold=self.crs_threshold)
+        # Stage 1 — CRS Rule Engine (always loaded, no pkl needed)
+        self.crs        = CRSEngine(threshold=self.crs_threshold)
+        self.ml_available = False
         print("  ✓  CRS Rule Engine ready")
 
-        # Stage 2 — Random Forest (binary: normal vs attack)
-        rf_model_path    = Path(os.environ.get("RF_MODEL_PATH",    str(MODEL_DIR / "rf_model.pkl")))
-        rf_features_path = Path(os.environ.get("RF_FEATURES_PATH", str(MODEL_DIR / "rf_feature_names.pkl")))
+        # Stage 2 — Random Forest
+        try:
+            rf_model_path    = Path(os.environ.get("RF_MODEL_PATH",    str(MODEL_DIR / "rf_model.pkl")))
+            rf_features_path = Path(os.environ.get("RF_FEATURES_PATH", str(MODEL_DIR / "rf_feature_names.pkl")))
+            if not rf_model_path.exists():
+                raise FileNotFoundError(f"RF model not found at {rf_model_path}")
+            self.rf          = joblib.load(rf_model_path)
+            self.rf_features = joblib.load(rf_features_path)
+            print("  ✓  Random Forest ready")
+        except Exception as e:
+            print(f"  ✗  Random Forest FAILED: {e}")
+            print("  ⚠  Starting in rule-engine-only mode (ML-007)")
+            self.rf          = None
+            self.rf_features = None
+            print("[Controller] Rule-engine-only mode active.\n")
+            return
 
-        if not rf_model_path.exists():
-            raise FileNotFoundError(
-                f"RF model not found at {rf_model_path}. "
-                "Run train1.py first to generate it."
-            )
+        # Stage 3 — XGBoost
+        try:
+            xgb_model_path    = Path(os.environ.get("XGB_MODEL_PATH",    str(MODEL_DIR / "xgb_model.pkl")))
+            xgb_features_path = Path(os.environ.get("XGB_FEATURES_PATH", str(MODEL_DIR / "xgb_feature_names.pkl")))
+            xgb_labels_path   = Path(os.environ.get("XGB_LABELS_PATH",   str(MODEL_DIR / "xgb_label_mapping.pkl")))
+            if not xgb_model_path.exists():
+                raise FileNotFoundError(f"XGBoost model not found at {xgb_model_path}")
+            self.xgb             = joblib.load(xgb_model_path)
+            self.xgb_features    = joblib.load(xgb_features_path)
+            label_mapping        = joblib.load(xgb_labels_path)
+            self.reverse_mapping = {v: k for k, v in label_mapping.items()}
+            print("  ✓  XGBoost ready")
+        except Exception as e:
+            print(f"  ✗  XGBoost FAILED: {e}")
+            print("  ⚠  XGBoost unavailable — RF-only mode active")
+            self.xgb             = None
+            self.xgb_features    = None
+            self.reverse_mapping = {}
 
-        self.rf           = joblib.load(rf_model_path)
-        self.rf_features  = joblib.load(rf_features_path)
-        print("  ✓  Random Forest ready")
-
-        # Stage 3 — XGBoost (multi-class attack classification)
-        xgb_model_path    = Path(os.environ.get("XGB_MODEL_PATH",    str(MODEL_DIR / "xgb_model.pkl")))
-        xgb_features_path = Path(os.environ.get("XGB_FEATURES_PATH", str(MODEL_DIR / "xgb_feature_names.pkl")))
-        xgb_labels_path   = Path(os.environ.get("XGB_LABELS_PATH",   str(MODEL_DIR / "xgb_label_mapping.pkl")))
-
-        if not xgb_model_path.exists():
-            raise FileNotFoundError(
-                f"XGBoost model not found at {xgb_model_path}. "
-                "Run train2.py first to generate it."
-            )
-
-        self.xgb              = joblib.load(xgb_model_path)
-        self.xgb_features     = joblib.load(xgb_features_path)
-        label_mapping         = joblib.load(xgb_labels_path)
-        self.reverse_mapping  = {v: k for k, v in label_mapping.items()}
-        print("  ✓  XGBoost ready")
-
+        self.ml_available = self.rf is not None
         print("[Controller] All models loaded.\n")
 
     
