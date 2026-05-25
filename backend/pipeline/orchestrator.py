@@ -33,7 +33,10 @@ from typing import Any
 
 from backend.engines.rule_engine import evaluate as rule_engine_evaluate
 from backend.engines.ml_adapter import adapt_ml_model
-from backend.pipeline.preprocessor import extract_features
+from backend.pipeline.http_feature_extractor import HTTPFeatureExtractor
+
+# Initialize feature extractor once at module level
+_feature_extractor = HTTPFeatureExtractor(verbose=False)
 
 log = logging.getLogger(__name__)
 
