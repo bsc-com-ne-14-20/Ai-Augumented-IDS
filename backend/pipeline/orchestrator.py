@@ -33,7 +33,10 @@ from typing import Any
 
 from backend.engines.rule_engine import evaluate as rule_engine_evaluate
 from backend.engines.ml_adapter import adapt_ml_model
-from backend.pipeline.preprocessor import extract_features
+from backend.pipeline.http_feature_extractor import HTTPFeatureExtractor
+
+# Initialize feature extractor once at module level
+_feature_extractor = HTTPFeatureExtractor(verbose=False)
 
 log = logging.getLogger(__name__)
 
@@ -155,9 +158,18 @@ def run_pipeline(raw_log_entry: dict[str, Any]) -> dict[str, Any]:
     """
     # ── Feature extraction ────────────────────────────────────────────────────
     try:
-        features = extract_features(raw_log_entry)
+        # Convert raw_log_entry to the format expected by HTTPFeatureExtractor
+        http_request = {
+            "method": raw_log_entry.get("method", "GET"),
+            "url": raw_log_entry.get("url", "/"),
+            "query_string": raw_log_entry.get("query_string", ""),
+            "body": raw_log_entry.get("body", ""),
+            "headers": raw_log_entry.get("headers", {}),
+            "content_length": raw_log_entry.get("content_length", 0),
+        }
+        features = _feature_extractor.extract_features(http_request)
     except (ValueError, Exception) as exc:
-        log.error("Preprocessor failed: %s", exc)
+        log.error("Feature extraction failed: %s", exc)
         return build_error_payload(raw_log_entry, f"Feature extraction failed: {exc}")
 
     # ── Rule engine (runs first, always) ─────────────────────────────────────

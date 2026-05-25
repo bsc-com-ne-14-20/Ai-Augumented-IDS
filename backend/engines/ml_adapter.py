@@ -18,16 +18,20 @@ Original model
 Public API added by this adapter
 ---------------------------------
   adapt_ml_model(feature_vector: dict) -> dict
-      Accepts a dict of z-scored features, calls predict + predict_proba,
+      Accepts a dict of raw features from HTTPFeatureExtractor, applies z-score
+      normalization using the saved scaler, calls predict + predict_proba,
       and returns a normalised verdict dict for the orchestrator.
 
   MODEL : the loaded RandomForestClassifier instance (exposed for health checks)
+  SCALER : the loaded StandardScaler instance (exposed for health checks)
 
 # ADAPTER CHANGE: Added this module to bridge the dict-based Flask pipeline to
 #   the numpy-array-based sklearn model — the original training notebook is NOT
 #   modified.
-# ADAPTER CHANGE: MODEL is loaded once at module import time (not per-request)
+# ADAPTER CHANGE: MODEL and SCALER are loaded once at module import time (not per-request)
 #   to avoid repeated disk I/O on the critical request path.
+# ADAPTER CHANGE: Now accepts raw features and applies z-scoring internally using
+#   the saved scaler, making it compatible with HTTPFeatureExtractor output.
 """
 
 import logging
@@ -51,6 +55,24 @@ if not _feature_names_path.exists():
         "Ensure data/final/feature_names.txt exists in the repo."
     )
 FEATURE_COLUMNS: list[str] = _feature_names_path.read_text().strip().splitlines()
+
+# ── Scaler loading (once at import time) ──────────────────────────────────────
+_scaler_path = Path(config.ML_SCALER_PATH)
+SCALER = None  # noqa: N816
+
+if not _scaler_path.exists():
+    log.warning(
+        "ML scaler not found at: %s - ML model will not be available. "
+        "Ensure data/final/scaler.pkl exists in the repo.",
+        _scaler_path
+    )
+else:
+    try:
+        SCALER = joblib.load(_scaler_path)
+        log.info("ML scaler loaded from %s", _scaler_path)
+    except Exception as exc:
+        log.error("Failed to load ML scaler: %s", exc)
+        SCALER = None
 
 # ── Model loading (once at import time) ───────────────────────────────────────
 _model_path = Path(config.ML_MODEL_PATH)
@@ -77,17 +99,17 @@ _THRESHOLD: float = config.ML_CONFIDENCE_THRESHOLD
 
 def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
     """
-    Run the RandomForestClassifier on a z-scored feature dict.
+    Run the RandomForestClassifier on a raw feature dict.
     
     SRS Requirement: ML-007 (Graceful degradation)
 
     Parameters
     ----------
     feature_vector : dict
-        Z-scored features produced by pipeline.preprocessor.extract_features().
+        Raw features produced by pipeline.http_feature_extractor.HTTPFeatureExtractor.
         Must contain all 53 keys listed in data/final/feature_names.txt.
-        Missing keys are filled with 0.0 (neutral z-score) and logged as a
-        warning so the pipeline does not crash on partial feature vectors.
+        Missing keys are filled with 0.0 and logged as a warning so the pipeline 
+        does not crash on partial feature vectors.
 
     Returns
     -------
@@ -97,9 +119,9 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
         severity   : str | None
         attack_type: str
     """
-    # ML-007: Graceful degradation if model unavailable
-    if MODEL is None:
-        log.debug("ML model unavailable - returning CLEAN verdict")
+    # ML-007: Graceful degradation if model or scaler unavailable
+    if MODEL is None or SCALER is None:
+        log.debug("ML model or scaler unavailable - returning CLEAN verdict")
         return {
             "verdict": "CLEAN",
             "confidence": 0.0,
@@ -109,21 +131,35 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
         }
     
     # ADAPTER CHANGE: Assemble values in the trained column order; fill missing
-    #   features with 0.0 (the scaler mean, so neutral for z-scored data).
+    #   features with 0.0 (neutral for raw features).
     missing = [col for col in FEATURE_COLUMNS if col not in feature_vector]
     if missing:
         log.warning("ML adapter: %d feature(s) missing, filling with 0.0: %s",
                     len(missing), missing[:10])
 
-    row = np.array(
+    # Assemble raw features in correct order
+    raw_row = np.array(
         [float(feature_vector.get(col, 0.0)) for col in FEATURE_COLUMNS],
         dtype=np.float64,
     ).reshape(1, -1)
+    
+    # Apply z-score normalization using the scaler
+    try:
+        scaled_row = SCALER.transform(raw_row)
+    except Exception as exc:
+        log.error("Feature scaling failed: %s", exc)
+        return {
+            "verdict": "CLEAN",
+            "confidence": 0.0,
+            "severity": None,
+            "attack_type": "UNKNOWN_ANOMALY",
+            "scaling_error": True,
+        }
 
     # ADAPTER CHANGE: predict_proba is called alongside predict so we can apply
     #   a configurable confidence threshold independently of the model's
     #   internal decision boundary.
-    proba = MODEL.predict_proba(row)[0]  # shape (2,): [P(clean), P(attack)]
+    proba = MODEL.predict_proba(scaled_row)[0]  # shape (2,): [P(clean), P(attack)]
     confidence = float(proba[1])
 
     if confidence < _THRESHOLD:
@@ -155,5 +191,5 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
 
 
 def is_ml_model_loaded() -> bool:
-    """Return True if MODEL was loaded successfully at import time."""
-    return MODEL is not None
+    """Return True if MODEL and SCALER were loaded successfully at import time."""
+    return MODEL is not None and SCALER is not None
