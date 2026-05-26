@@ -18,6 +18,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
+# IDS middleware env vars (IDS_BACKEND_URL, IDS_API_KEY) are also loaded from .env above.
+# On production (Render/DigitalOcean) set them as platform environment variables instead.
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -42,7 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'feature.apps.FeatureConfig',
     'accounts.apps.AccountsConfig',
-    
+    # IDS traffic interception middleware app
+    'ids_middleware.apps.IdsMiddlewareConfig',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +57,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # IDS traffic interception — must be last so it sees the final response
+    'ids_middleware.middleware.IDSMiddleware',
 ]
 
 ROOT_URLCONF = 'blog_page.urls'
@@ -131,6 +136,31 @@ MEDIA_URL = '/media/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "ids_middleware": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
 
 LOGIN_REDIRECT_URL = 'feature-home'
 LOGIN_URL = 'auth-login'
