@@ -18,13 +18,6 @@
                 {{ field.label }}
               </label>
               {{ field }}
-              {% if field.errors %}
-                <div class="invalid-feedback d-block mt-2">
-                  {% for error in field.errors %}
-                    <div class="mb-2">{{ error }}</div>
-                  {% endfor %}
-                </div>
-              {% endif %}
             </div>
           {% endfor %}
 
