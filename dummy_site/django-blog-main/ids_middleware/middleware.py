@@ -26,6 +26,7 @@ MW-006  IDS_BACKEND_URL and IDS_API_KEY read from environment variables
 from .payload_builder import build_payload
 from .async_forwarder import forward_async
 from .logger import logger
+from .config import IDS_BACKEND_URL
 
 
 class IDSMiddleware:
@@ -41,6 +42,11 @@ class IDSMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        if not IDS_BACKEND_URL:
+            logger.warning(
+                "IDS_BACKEND_URL is not configured — IDS traffic forwarding is DISABLED. "
+                "Set IDS_BACKEND_URL in your environment or .env file."
+            )
         logger.debug("IDSMiddleware initialised")
 
     def __call__(self, request):
