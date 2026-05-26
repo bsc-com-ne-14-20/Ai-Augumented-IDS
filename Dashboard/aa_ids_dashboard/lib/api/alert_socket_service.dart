@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:aa_ids_dashboard/api/endpoints.dart';
 import 'package:aa_ids_dashboard/models/dashboard_models.dart';

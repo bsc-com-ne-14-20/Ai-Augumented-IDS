@@ -27,13 +27,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     // Initialize dashboard provider for real-time alerts and API calls
     final dashboardProvider = context.read<DashboardProvider>();
+    
+    print('[DashboardScreen] Initializing dashboard...');
     dashboardProvider.initializeRealtimeAlerts();
     
     // Load backend metrics and initial alerts
-    // This will populate the provider with real data from the backend
+    print('[DashboardScreen] Calling checkHealth()...');
     dashboardProvider.checkHealth();
+    
+    print('[DashboardScreen] Calling fetchMetrics()...');
     dashboardProvider.fetchMetrics();
+    
+    print('[DashboardScreen] Calling fetchAlerts()...');
     dashboardProvider.fetchAlerts();
+    
+    print('[DashboardScreen] All API calls initiated!');
   }
 
   // ── Notification helpers ───────────────────────────────────────
@@ -88,13 +96,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Metric cards
+                  // Metric cards - Using backend metrics from /metrics endpoint
                   Row(
                     children: [
                       Expanded(
                         child: DashboardMetricCard(
-                          title: 'TOTAL INCIDENTS LOGGED',
-                            value: dashboardProvider.totalAlerts.toString(),
+                          title: 'ATTACKS DETECTED',
+                          // From metrics endpoint: total_attacks_detected
+                          value: dashboardProvider
+                                  .metrics?.totalAttactsDetected
+                                  .toString() ??
+                              '0',
                           accentColor: const Color(0xFF4A9EFF),
                           icon: Icons.list_alt_rounded,
                           showBottomSection: false,
@@ -104,6 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: DashboardMetricCard(
                           title: 'REQUESTS INSPECTED',
+                          // From metrics endpoint: total_requests_analyzed
                           value: dashboardProvider
                                   .metrics?.totalRequestsAnalyzed
                                   .toString() ??
@@ -113,8 +126,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           showBottomSection: false,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      
                       const SizedBox(width: 16),
                       Expanded(
                         child: DashboardMetricCard(

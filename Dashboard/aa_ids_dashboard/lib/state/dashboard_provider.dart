@@ -103,13 +103,16 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> checkHealth() async {
     _healthCheckLoading = true;
     _healthError = null;
+    print('[Provider] checkHealth() - Request started');
     notifyListeners();
 
     try {
       _healthStatus = await _dashboardApi.checkHealth();
+      print('[Provider] checkHealth() - Success: ${_healthStatus?.status}');
     } catch (e) {
       _healthError = e.toString().replaceAll('Exception: ', '');
       _healthStatus = null;
+      print('[Provider] checkHealth() - Error: $_healthError');
     } finally {
       _healthCheckLoading = false;
       notifyListeners();
@@ -146,13 +149,16 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> fetchMetrics() async {
     _metricsLoading = true;
     _metricsError = null;
+    print('[Provider] fetchMetrics() - Request started');
     notifyListeners();
 
     try {
       _metrics = await _dashboardApi.fetchMetrics();
+      print('[Provider] fetchMetrics() - Success: totalAttacksDetected=${_metrics?.totalAttactsDetected}, totalRequestsAnalyzed=${_metrics?.totalRequestsAnalyzed}');
     } catch (e) {
       _metricsError = e.toString().replaceAll('Exception: ', '');
       _metrics = null;
+      print('[Provider] fetchMetrics() - Error: $_metricsError');
     } finally {
       _metricsLoading = false;
       notifyListeners();
@@ -180,6 +186,7 @@ class DashboardProvider extends ChangeNotifier {
     if (verdict != null) _verdictFilter = verdict;
     if (severity != null) _severityFilter = severity;
     
+    print('[Provider] fetchAlerts() - Request started (page=$pageNum, pageSize=$pageSizeNum, verdict=$_verdictFilter, severity=$_severityFilter)');
     notifyListeners();
 
     try {
@@ -199,10 +206,13 @@ class DashboardProvider extends ChangeNotifier {
       _incidents = _detectionResults
           .map((result) => _dashboardApi.detectionResultToIncident(result))
           .toList();
+      
+      print('[Provider] fetchAlerts() - Success: loaded ${_incidents.length} incidents (total: $_totalAlerts)');
     } catch (e) {
       _detectionResultsError = e.toString().replaceAll('Exception: ', '');
       _detectionResults = [];
       _incidents = [];
+      print('[Provider] fetchAlerts() - Error: $_detectionResultsError');
     } finally {
       _detectionResultsLoading = false;
       notifyListeners();

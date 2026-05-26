@@ -91,7 +91,7 @@ class DashboardApi {
     try {
       final queryParams = {
         'page': page.toString(),
-        'page_size': pageSize.toString(),
+        'limit': pageSize.toString(),
       };
       
       if (verdict != null && verdict.isNotEmpty) {
@@ -121,6 +121,11 @@ class DashboardApi {
   // ── Helper Methods ─────────────────────────────────────────────────────────
 
   /// Convert a DetectionResult to an Incident for display in the dashboard
+  /// ════════════════════════════════════════════════════════════════════════════
+  /// SINGLE SOURCE OF TRUTH: This is the ONLY place where DetectionResult 
+  /// (API response) is converted to Incident (UI model).
+  /// All field mappings must be documented here and stay in sync with both models.
+  /// See Incident model comments for the complete mapping table.
   Incident detectionResultToIncident(DetectionResult result) {
     return Incident(
       id: result.alertId,
@@ -131,7 +136,7 @@ class DashboardApi {
       reviewedStatus: 'No',
       name: result.attackType ?? 'Unknown',
       score: result.confidence ?? 0.0,
-      sourceIp: 'N/A',
+      sourceIp: result.sourceIp ?? 'N/A',  // Now from API, fallback to N/A if missing
       detector: result.detectionSource ?? 'Unknown',
       alertMessage: result.verdict,
       httpRequest: 'GET ${result.requestSummary.path}${result.requestSummary.queryString.isNotEmpty ? '?${result.requestSummary.queryString}' : ''}',

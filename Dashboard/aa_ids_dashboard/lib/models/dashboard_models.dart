@@ -1,10 +1,11 @@
 class Incident {
+ 
   final String id;
   final String time;
   final String endpoint;
   final String method;
   final String threat;           // "High", "Med", "Low"
-  final String reviewedStatus;   // "Yes" or "Pending"  ← Changed/renamed
+  final String reviewedStatus;   // "Yes" or "Pending"
 
   // Detail panel fields
   final String name;
@@ -154,6 +155,10 @@ class RequestSummary {
 }
 
 /// DetectionResult - A single analyzed request verdict
+/// ════════════════════════════════════════════════════════════════════════════
+/// API Contract: Maps directly from backend /alerts response.
+/// This is the SOURCE OF TRUTH for what the backend provides.
+/// All fields here should match the backend API schema exactly.
 class DetectionResult {
   final String alertId;
   final String timestamp;
@@ -164,6 +169,7 @@ class DetectionResult {
   final String? ruleTriggered;
   final double? confidence;      // Only for ML detections
   final String? affectedField;
+  final String? sourceIp;        // Client IP address (from backend analysis)
   final RequestSummary requestSummary;
 
   DetectionResult({
@@ -176,6 +182,7 @@ class DetectionResult {
     this.ruleTriggered,
     this.confidence,
     this.affectedField,
+    this.sourceIp,
     required this.requestSummary,
   });
 
@@ -190,6 +197,7 @@ class DetectionResult {
       ruleTriggered: json['rule_triggered'],
       confidence: (json['confidence'] as num?)?.toDouble(),
       affectedField: json['affected_field'],
+      sourceIp: json['source_ip'],
       requestSummary: RequestSummary.fromJson(json['request_summary']),
     );
   }
