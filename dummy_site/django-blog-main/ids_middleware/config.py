@@ -15,4 +15,5 @@ IDS_BACKEND_URL: str = os.environ.get("IDS_BACKEND_URL", "")
 IDS_API_KEY: str = os.environ.get("IDS_API_KEY", "")
 
 # Maximum time (seconds) to wait for the IDS backend before giving up.
-IDS_TIMEOUT: float = 0.5  # 500 ms — MW-004
+# Can be overridden via IDS_TIMEOUT env var. Default is 500 ms (MW-004).
+IDS_TIMEOUT: float = float(os.environ.get("IDS_TIMEOUT", "0.5"))
