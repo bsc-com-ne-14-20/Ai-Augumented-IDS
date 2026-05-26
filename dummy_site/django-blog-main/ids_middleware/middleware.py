@@ -48,6 +48,11 @@ class IDSMiddleware:
         # the raw body (Django may consume it during view processing).
         try:
             payload = build_payload(request)
+            logger.debug(
+                "IDS intercepted %s %s",
+                payload.get("method"),
+                payload.get("path"),
+            )
         except Exception as exc:  # noqa: BLE001 — MW-005
             logger.error("Failed to build IDS payload: %s", exc)
             payload = None
