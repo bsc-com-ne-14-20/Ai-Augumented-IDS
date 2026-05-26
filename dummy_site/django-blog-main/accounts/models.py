@@ -12,9 +12,10 @@ class Profile(models.Model):
 
     def save(self,*args, **kwargs):
         super().save(*args, **kwargs)
-        #image processing
-        img = Image.open(self.image.path)
-        if img.height > 200 or img.width > 200:
-            output_size = (200, 200)
-            img.thumbnail(output_size)
-            img.save(self.image.path)
+        # Only process image if one exists
+        if self.image:
+            img = Image.open(self.image.path)
+            if img.height > 200 or img.width > 200:
+                output_size = (200, 200)
+                img.thumbnail(output_size)
+                img.save(self.image.path)
