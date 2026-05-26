@@ -80,3 +80,9 @@ class TestSendToIds:
         monkeypatch.setattr("ids_middleware.ids_client.IDS_BACKEND_URL", "http://fake-ids/api/v1/analyse")
         with patch("ids_middleware.ids_client.urllib.request.urlopen", side_effect=RuntimeError("boom")):
             send_to_ids(SAMPLE_PAYLOAD)
+
+    def test_handles_timeout_gracefully(self, monkeypatch):
+        """Should log timeout error and not raise when backend times out."""
+        monkeypatch.setattr("ids_middleware.ids_client.IDS_BACKEND_URL", "http://fake-ids/api/v1/analyse")
+        with patch("ids_middleware.ids_client.urllib.request.urlopen", side_effect=TimeoutError("timed out")):
+            send_to_ids(SAMPLE_PAYLOAD)
