@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'feature.apps.FeatureConfig',
     'accounts.apps.AccountsConfig',
-    
+    # IDS traffic interception middleware app
+    'ids_middleware.apps.IdsMiddlewareConfig',
 ]
 
 MIDDLEWARE = [
