@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import unquote
 
-import config
+from backend.config import get_config
 
 log = logging.getLogger(__name__)
 
@@ -57,6 +57,7 @@ log.info("Rule engine loaded %d rules from %s", len(_RULES), _RULES_PATH)
 _brute_force_counter: Dict[str, List[tuple]] = defaultdict(list)
 
 # Thresholds from config
+config = get_config()
 _BF_THRESHOLD = config.BF_REQUEST_THRESHOLD
 _BF_WINDOW = config.BF_TIME_WINDOW_SECONDS
 

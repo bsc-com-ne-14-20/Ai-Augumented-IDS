@@ -6,11 +6,12 @@ SRS Requirements: Section 8.1 (Unit Testing - Flask REST API)
 - Test missing method field returns 400
 - Test wrong API key returns 403
 - Test /api/v1/health returns correct schema
+- Test API key validator decorator (Task 17.1)
 """
 
 import pytest
 from app import create_app
-import config
+from backend.config import get_config
 
 
 @pytest.fixture
@@ -25,10 +26,155 @@ def client():
 @pytest.fixture
 def valid_headers():
     """Valid API headers with correct key."""
+    config = get_config()
     return {
         "Content-Type": "application/json",
         "X-IDS-Key": config.IDS_API_KEY
     }
+
+
+class TestAPIKeyValidator:
+    """Test API key validator decorator (Task 17.1)."""
+    
+    def test_missing_api_key_header(self, client):
+        """Test that missing X-IDS-Key header returns HTTP 403."""
+        payload = {
+            "logs": [
+                {
+                    "method": "GET",
+                    "url": "/test",
+                    "path": "/test", 
+                    "query_string": "",
+                    "headers": {},
+                    "body": "",
+                    "response_code": 200,
+                    "content_length": 0,
+                    "timestamp": "2026-05-23T10:00:00Z"
+                }
+            ]
+        }
+        
+        response = client.post(
+            "/api/v1/analyse",
+            json=payload,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        assert response.status_code == 403
+        data = response.get_json()
+        assert data["error"] == "UNAUTHORIZED"
+        assert "Missing X-IDS-Key header" in data["detail"]
+    
+    def test_invalid_api_key_header(self, client):
+        """Test that invalid X-IDS-Key header returns HTTP 403."""
+        payload = {
+            "logs": [
+                {
+                    "method": "GET",
+                    "url": "/test",
+                    "path": "/test",
+                    "query_string": "",
+                    "headers": {},
+                    "body": "",
+                    "response_code": 200,
+                    "content_length": 0,
+                    "timestamp": "2026-05-23T10:00:00Z"
+                }
+            ]
+        }
+        
+        response = client.post(
+            "/api/v1/analyse",
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "X-IDS-Key": "invalid-api-key-12345"
+            }
+        )
+        
+        assert response.status_code == 403
+        data = response.get_json()
+        assert data["error"] == "UNAUTHORIZED"
+        assert "Invalid X-IDS-Key header" in data["detail"]
+    
+    def test_valid_api_key_allows_access(self, client, valid_headers):
+        """Test that valid X-IDS-Key header allows access to protected endpoint."""
+        payload = {
+            "logs": [
+                {
+                    "method": "GET",
+                    "url": "/test",
+                    "path": "/test",
+                    "query_string": "",
+                    "headers": {},
+                    "body": "",
+                    "response_code": 200,
+                    "content_length": 0,
+                    "timestamp": "2026-05-23T10:00:00Z"
+                }
+            ]
+        }
+        
+        response = client.post(
+            "/api/v1/analyse",
+            json=payload,
+            headers=valid_headers
+        )
+        
+        # Should not return 403 (may return other status codes for validation errors)
+        assert response.status_code != 403
+    
+    def test_empty_api_key_header(self, client):
+        """Test that empty X-IDS-Key header returns HTTP 403."""
+        payload = {
+            "logs": [
+                {
+                    "method": "GET",
+                    "url": "/test",
+                    "path": "/test",
+                    "query_string": "",
+                    "headers": {},
+                    "body": "",
+                    "response_code": 200,
+                    "content_length": 0,
+                    "timestamp": "2026-05-23T10:00:00Z"
+                }
+            ]
+        }
+        
+        response = client.post(
+            "/api/v1/analyse",
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "X-IDS-Key": ""
+            }
+        )
+        
+        assert response.status_code == 403
+        data = response.get_json()
+        assert data["error"] == "UNAUTHORIZED"
+        assert "Missing X-IDS-Key header" in data["detail"]
+    
+    def test_api_key_not_logged_in_response(self, client):
+        """Test that API key is never exposed in error responses (Requirement 19.8)."""
+        config = get_config()
+        
+        # Test with wrong API key
+        response = client.post(
+            "/api/v1/analyse",
+            json={"logs": []},
+            headers={
+                "Content-Type": "application/json",
+                "X-IDS-Key": "wrong-key"
+            }
+        )
+        
+        response_text = response.get_data(as_text=True)
+        
+        # Ensure the actual API key is never exposed in the response
+        assert config.IDS_API_KEY not in response_text
+        assert "wrong-key" not in response_text  # Even the wrong key shouldn't be echoed back
 
 
 class TestHealthEndpoint:

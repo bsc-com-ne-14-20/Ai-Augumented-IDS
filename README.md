@@ -40,3 +40,9 @@ Incoming HTTP Request
 ┌────────────────────────────────────────┐
 │  Layer 3: XGBoost Multi-Class Forensic │ ──► [Categorize & Log]
 └────────────────────────────────────────┘     (SQLi, XSS, Path Traversal, etc.)
+
+---
+
+### 1.4 Documentation
+- [API Documentation](docs/API_DOCUMENTATION.md)
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)

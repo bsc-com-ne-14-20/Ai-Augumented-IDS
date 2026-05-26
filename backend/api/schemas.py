@@ -9,7 +9,7 @@ Schemas
   AnalyzeRequestSchema — validates the full POST /api/v1/analyze payload
 """
 
-from marshmallow import Schema, fields, validate, ValidationError, validates_schema
+from marshmallow import Schema, fields, validate, ValidationError, validates_schema, EXCLUDE
 
 
 class LogEntrySchema(Schema):
@@ -38,7 +38,7 @@ class LogEntrySchema(Schema):
     timestamp = fields.Str(required=True, validate=validate.Length(min=1, max=64))
 
     class Meta:
-        unknown = "EXCLUDE"  # marshmallow 3.x constant value
+        unknown = EXCLUDE  # marshmallow 3.x constant value
 
 
 class AnalyzeRequestSchema(Schema):
@@ -56,4 +56,4 @@ class AnalyzeRequestSchema(Schema):
     )
 
     class Meta:
-        unknown = "EXCLUDE"
+        unknown = EXCLUDE

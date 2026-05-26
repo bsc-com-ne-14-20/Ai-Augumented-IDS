@@ -60,7 +60,7 @@
       "id": "CRLF-001",
       "name": "CRLF Injection",
       "category": "CRLF_INJECTION",
-      "pattern": "(%0d|%0a|\\r|\\n)(set-cookie:|content-length:|location:)",
+      "pattern": "(?i)(%0d|%0a|\\r|\\n)(set-cookie:|content-length:|location:)",
       "fields": ["url", "headers"],
       "severity": "high"
     },

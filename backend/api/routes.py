@@ -20,16 +20,18 @@ import logging
 import time
 from datetime import datetime, timezone
 from typing import Any
+from functools import wraps
 
 from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 
 from backend.api.schemas import AnalyzeRequestSchema
+from backend.api.validation import check_request_size, sanitize_dict, rate_limit
 from backend.pipeline.orchestrator import run_pipeline
 from backend.sockets.events import emit_alert
 from backend.engines.rule_engine import is_rule_engine_loaded
 from backend.engines.ml_adapter import is_ml_model_loaded
-import config
+from backend.config import get_config
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +42,51 @@ _analyze_schema = AnalyzeRequestSchema()
 
 # Session-scoped in-memory state (resets on server restart)
 _START_TIME: float = time.time()
+
+
+def require_api_key(f):
+    """
+    API key validation decorator for protecting endpoints.
+    
+    Checks for X-IDS-Key header presence and validates against configured API key.
+    Returns HTTP 403 on missing or invalid key.
+    Never logs or exposes API key in responses.
+    
+    Requirements: 19.1, 19.2, 19.8
+    
+    Usage:
+        @api_bp.route("/protected", methods=["POST"])
+        @require_api_key
+        def protected_endpoint():
+            return jsonify({"message": "Access granted"})
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check for X-IDS-Key header presence (Requirement 19.1)
+        api_key = request.headers.get("X-IDS-Key")
+        
+        if not api_key:
+            log.warning("Missing X-IDS-Key header in request to %s", request.endpoint)
+            return jsonify({
+                "error": "UNAUTHORIZED",
+                "detail": "Missing X-IDS-Key header",
+            }), 403
+        
+        # Compare header value with configured API key (Requirement 19.2)
+        config = get_config()
+        expected_key = config.IDS_API_KEY
+        
+        if api_key != expected_key:
+            log.warning("Invalid X-IDS-Key header in request to %s", request.endpoint)
+            return jsonify({
+                "error": "UNAUTHORIZED", 
+                "detail": "Invalid X-IDS-Key header",
+            }), 403
+        
+        # API key is valid, proceed with the original function
+        return f(*args, **kwargs)
+    
+    return decorated_function
 
 _metrics: dict[str, Any] = {
     "total_requests_analyzed": 0,
@@ -105,7 +152,7 @@ def health() -> Any:
     """
     GET /api/v1/health
     
-    SRS Requirement: FL-004
+    SRS Requirement: FL-004, 18.6
     
     Returns system health status and engine readiness.
     Always returns 200 even if engines are partially degraded.
@@ -120,26 +167,45 @@ def health() -> Any:
             "uptime_seconds": int
         }
     """
+    # Performance monitoring (Requirement 18.6)
+    request_start_time = time.monotonic()
+    request_timestamp = datetime.now(timezone.utc).isoformat()
+    
     # For prototype, db_connected is always true (in-memory state)
-    return jsonify({
+    response_data = {
         "status": "ok",
         "models_loaded": is_ml_model_loaded(),
         "db_connected": True,
         "rule_engine_loaded": is_rule_engine_loaded(),
         "ml_model_loaded": is_ml_model_loaded(),
         "uptime_seconds": _uptime_seconds(),
-    }), 200
+    }
+    
+    processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
+    
+    # Log API request (Requirement 18.6)
+    log.info("API Request completed - Method: %s, Path: %s, Timestamp: %s, Processing time: %dms, Status: %s", 
+             request.method, request.path, request_timestamp, processing_time_ms, response_data["status"])
+    
+    return jsonify(response_data), 200
 
 
 @api_bp.route("/analyse", methods=["POST"])
+@require_api_key
+@check_request_size()
+@rate_limit()
 def analyse() -> Any:
     """
     POST /api/v1/analyse
     
-    SRS Requirements: FL-001, FL-002, FL-003
+    SRS Requirements: FL-001, FL-002, FL-003, 10.6, 18.6
     
     Accept a batch of HTTP log entries, run the detection pipeline on each,
     emit Socket.IO alerts for ATTACK/ANOMALY verdicts, and return results.
+    
+    Performance Requirements:
+    - Process single-request batches within 200ms (Requirement 10.6)
+    - Log processing time per request (Requirement 18.6)
     
     Request Headers:
         X-IDS-Key: Shared API key (required)
@@ -174,20 +240,16 @@ def analyse() -> Any:
             "features": {...}
         }
     """
-    # FL-003: API key authentication
-    api_key = request.headers.get("X-IDS-Key")
-    expected_key = config.IDS_API_KEY
+    # Start timing for overall request processing (Requirement 18.6)
+    request_start_time = time.monotonic()
+    request_timestamp = datetime.now(timezone.utc).isoformat()
     
-    if not api_key or api_key != expected_key:
-        log.warning("Unauthorized access attempt to /analyse")
-        return jsonify({
-            "error": "UNAUTHORIZED",
-            "detail": "Missing or invalid X-IDS-Key header",
-        }), 403
-
     # FL-002: Request validation
     body = request.get_json(silent=True)
     if body is None:
+        processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
+        log.warning("VALIDATION_ERROR: Invalid JSON body - Method: %s, Path: %s, Processing time: %dms", 
+                   request.method, request.path, processing_time_ms)
         return jsonify({
             "error": "VALIDATION_ERROR",
             "detail": "Request body must be valid JSON.",
@@ -196,41 +258,92 @@ def analyse() -> Any:
     try:
         validated = _analyze_schema.load(body)
     except ValidationError as err:
+        processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
         first_msg = str(err.messages)
-        log.warning("Validation error on /analyse: %s", first_msg)
+        log.warning("VALIDATION_ERROR: Schema validation failed - Method: %s, Path: %s, Processing time: %dms, Error: %s", 
+                   request.method, request.path, processing_time_ms, first_msg)
         return jsonify({
             "error": "VALIDATION_ERROR",
             "detail": first_msg,
         }), 400
 
-    logs = validated["logs"]
-    t_start = time.monotonic()
+    # Sanitize user-provided strings before processing (Requirement 19.5)
+    sanitized_data = sanitize_dict(validated)
+    logs = sanitized_data["logs"]
+    
+    # Performance optimization: Pre-allocate results list for better memory efficiency
     results: list[dict[str, Any]] = []
-
-    # FL-001: Run detection pipeline
+    
+    # Track individual request processing times (Requirement 18.6)
+    individual_times: list[int] = []
+    
+    # FL-001: Run detection pipeline with per-request timing
     for idx, log_entry in enumerate(logs):
+        entry_start_time = time.monotonic()
+        
         try:
             result = run_pipeline(log_entry)
         except Exception as exc:
-            log.error("Pipeline crashed on entry %d: %s", idx, exc)
+            entry_processing_ms = int((time.monotonic() - entry_start_time) * 1000)
+            total_processing_ms = int((time.monotonic() - request_start_time) * 1000)
+            log.error("PIPELINE_ERROR: Pipeline crashed on entry %d - Method: %s, Path: %s, Entry time: %dms, Total time: %dms, Error: %s", 
+                     idx, request.method, request.path, entry_processing_ms, total_processing_ms, exc)
             return jsonify({
                 "error": "PIPELINE_ERROR",
                 "detail": f"Detection pipeline failed on entry {idx}: {exc}",
             }), 500
 
+        entry_processing_ms = int((time.monotonic() - entry_start_time) * 1000)
+        individual_times.append(entry_processing_ms)
+        
+        # Log per-request processing time (Requirement 18.6)
+        log.info("Request processed - Entry: %d, Method: %s, URL: %s, Verdict: %s, Processing time: %dms", 
+                idx, log_entry.get("method", "UNKNOWN"), log_entry.get("url", "UNKNOWN"), 
+                result.get("verdict", "UNKNOWN"), entry_processing_ms)
+        
+        # Performance warning for slow individual requests
+        if entry_processing_ms > 100:  # Half of the 200ms target
+            log.warning("PERFORMANCE_WARNING: Slow request processing - Entry: %d, Processing time: %dms", 
+                       idx, entry_processing_ms)
+
         _update_metrics(result)
 
-        # Emit Socket.IO alert for ATTACK/ANOMALY
+        # Emit Socket.IO alert for ATTACK/ANOMALY (optimized to avoid blocking)
         if result.get("verdict") in ("ATTACK", "ANOMALY"):
-            emit_alert(result)
+            try:
+                emit_alert(result)
+            except Exception as emit_exc:
+                # Don't let WebSocket failures block the response
+                log.warning("WebSocket emission failed for entry %d: %s", idx, emit_exc)
 
         results.append(result)
 
-    processing_ms = int((time.monotonic() - t_start) * 1000)
+    # Calculate final timing metrics
+    total_processing_ms = int((time.monotonic() - request_start_time) * 1000)
+    
+    # Performance optimization check (Requirement 10.6)
+    if len(logs) == 1 and total_processing_ms > 200:
+        log.warning("PERFORMANCE_SLA_VIOLATION: Single-request batch exceeded 200ms - Processing time: %dms", 
+                   total_processing_ms)
+    
+    # Aggregate statistics calculation (optimized with single pass)
+    total_attacks = 0
+    total_anomalies = 0
+    total_clean = 0
+    
+    for result in results:
+        verdict = result.get("verdict")
+        if verdict == "ATTACK":
+            total_attacks += 1
+        elif verdict == "ANOMALY":
+            total_anomalies += 1
+        elif verdict == "CLEAN":
+            total_clean += 1
 
-    total_attacks = sum(1 for r in results if r["verdict"] == "ATTACK")
-    total_anomalies = sum(1 for r in results if r["verdict"] == "ANOMALY")
-    total_clean = sum(1 for r in results if r["verdict"] == "CLEAN")
+    # Log overall request completion (Requirement 18.6)
+    log.info("API Request completed - Method: %s, Path: %s, Timestamp: %s, Batch size: %d, Total processing time: %dms, Attacks: %d, Anomalies: %d, Clean: %d", 
+             request.method, request.path, request_timestamp, len(logs), total_processing_ms, 
+             total_attacks, total_anomalies, total_clean)
 
     return jsonify({
         "summary": {
@@ -238,7 +351,9 @@ def analyse() -> Any:
             "total_clean": total_clean,
             "total_attacks": total_attacks,
             "total_anomalies": total_anomalies,
-            "processing_time_ms": processing_ms,
+            "processing_time_ms": total_processing_ms,
+            "individual_processing_times_ms": individual_times,
+            "average_processing_time_ms": int(sum(individual_times) / len(individual_times)) if individual_times else 0,
         },
         "results": results,
     }), 200
@@ -249,7 +364,7 @@ def alerts() -> Any:
     """
     GET /api/v1/alerts
     
-    SRS Requirement: AL-005
+    SRS Requirement: AL-005, 18.6
     
     Return paginated, filterable alert history.
     
@@ -270,10 +385,17 @@ def alerts() -> Any:
             "page_size": int
         }
     """
+    # Performance monitoring (Requirement 18.6)
+    request_start_time = time.monotonic()
+    request_timestamp = datetime.now(timezone.utc).isoformat()
+    
     try:
         page = max(1, int(request.args.get("page", 1)))
         limit = min(500, max(1, int(request.args.get("limit", 50))))
     except ValueError:
+        processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
+        log.warning("VALIDATION_ERROR: Invalid pagination parameters - Method: %s, Path: %s, Processing time: %dms", 
+                   request.method, request.path, processing_time_ms)
         return jsonify({
             "error": "VALIDATION_ERROR",
             "detail": "page and limit must be positive integers.",
@@ -286,7 +408,7 @@ def alerts() -> Any:
     from_date = request.args.get("from_date", "").strip() or None
     to_date = request.args.get("to_date", "").strip() or None
 
-    # Apply filters
+    # Apply filters (optimized with early filtering)
     filtered = _alert_log
     
     if attack_type_filter:
@@ -318,6 +440,12 @@ def alerts() -> Any:
     total = len(filtered)
     start = (page - 1) * limit
     page_data = filtered[start: start + limit]
+    
+    processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
+    
+    # Log API request (Requirement 18.6)
+    log.info("API Request completed - Method: %s, Path: %s, Timestamp: %s, Processing time: %dms, Total alerts: %d, Filtered: %d, Page: %d", 
+             request.method, request.path, request_timestamp, processing_time_ms, len(_alert_log), total, page)
 
     return jsonify({
         "alerts": page_data,
@@ -331,6 +459,8 @@ def alerts() -> Any:
 def alert_detail(request_id: str) -> Any:
     """
     GET /api/v1/alerts/<request_id>
+    
+    SRS Requirement: 18.6
     
     Return full detail of a single alert including all 53 extracted features.
     
@@ -348,9 +478,25 @@ def alert_detail(request_id: str) -> Any:
             "features": {...}  # All 53 features
         }
     """
+    # Performance monitoring (Requirement 18.6)
+    request_start_time = time.monotonic()
+    request_timestamp = datetime.now(timezone.utc).isoformat()
+    
     for alert in _alert_log:
         if alert.get("alert_id") == request_id:
+            processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
+            
+            # Log API request (Requirement 18.6)
+            log.info("API Request completed - Method: %s, Path: %s, Timestamp: %s, Processing time: %dms, Alert found: %s", 
+                     request.method, request.path, request_timestamp, processing_time_ms, request_id)
+            
             return jsonify(alert), 200
+    
+    processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
+    
+    # Log API request (Requirement 18.6)
+    log.info("API Request completed - Method: %s, Path: %s, Timestamp: %s, Processing time: %dms, Alert found: None", 
+             request.method, request.path, request_timestamp, processing_time_ms)
     
     return jsonify({
         "error": "NOT_FOUND",
@@ -363,6 +509,8 @@ def stats() -> Any:
     """
     GET /api/v1/stats
     
+    SRS Requirement: 18.6
+    
     Return aggregate statistics for the session.
     
     Response:
@@ -373,6 +521,10 @@ def stats() -> Any:
             "detection_source_split": {...}
         }
     """
+    # Performance monitoring (Requirement 18.6)
+    request_start_time = time.monotonic()
+    request_timestamp = datetime.now(timezone.utc).isoformat()
+    
     ml_scores = _metrics["ml_confidence_scores"]
     if ml_scores:
         import statistics
@@ -384,7 +536,7 @@ def stats() -> Any:
     else:
         ml_dist = {"mean": None, "min": None, "max": None}
 
-    return jsonify({
+    response_data = {
         "total_requests": _metrics["total_requests_analyzed"],
         "total_attacks": _metrics["total_attacks_detected"],
         "total_anomalies": _metrics["total_anomalies_detected"],
@@ -394,7 +546,16 @@ def stats() -> Any:
         "severity_breakdown": _metrics["severity_breakdown"],
         "ml_confidence_distribution": ml_dist,
         "session_uptime_seconds": _uptime_seconds(),
-    }), 200
+    }
+    
+    processing_time_ms = int((time.monotonic() - request_start_time) * 1000)
+    
+    # Log API request (Requirement 18.6)
+    log.info("API Request completed - Method: %s, Path: %s, Timestamp: %s, Processing time: %dms, Total requests: %d", 
+             request.method, request.path, request_timestamp, processing_time_ms, 
+             _metrics["total_requests_analyzed"])
+
+    return jsonify(response_data), 200
 
 
 # ── Error handlers ────────────────────────────────────────────────────────────

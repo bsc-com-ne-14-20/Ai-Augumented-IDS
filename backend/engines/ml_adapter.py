@@ -41,13 +41,14 @@ from typing import Any
 import joblib
 import numpy as np
 
-import config  # noqa: E402
+from backend.config import get_config
 
 log = logging.getLogger(__name__)
 
 # ── Feature column order ──────────────────────────────────────────────────────
 # ADAPTER CHANGE: Load the saved column order so input dicts are assembled into
 #   numpy arrays in the exact order the model was trained on.
+config = get_config()
 _feature_names_path = Path(config.ML_FEATURE_NAMES_PATH)
 if not _feature_names_path.exists():
     raise RuntimeError(
