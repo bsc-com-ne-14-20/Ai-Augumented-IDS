@@ -50,5 +50,7 @@ def send_to_ids(payload: dict) -> None:
             logger.debug("IDS backend responded with status %s", resp.status)
     except urllib.error.URLError as exc:
         logger.error("IDS backend unreachable: %s", exc.reason)
+    except TimeoutError:
+        logger.error("IDS backend timed out after %.3fs — skipping", IDS_TIMEOUT)
     except Exception as exc:  # noqa: BLE001
         logger.error("Unexpected error forwarding to IDS backend: %s", exc)
