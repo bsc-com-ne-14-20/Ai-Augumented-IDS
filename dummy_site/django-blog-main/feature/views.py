@@ -13,7 +13,7 @@ from django.views.generic import(
 from .models import Post
 
 
-class PostListView(LoginRequiredMixin, ListView):
+class PostListView(ListView):
     model = Post
     template_name = 'feature/home.html'  # <app>/<model>_<viewtype>.html
     context_object_name = 'posts'
