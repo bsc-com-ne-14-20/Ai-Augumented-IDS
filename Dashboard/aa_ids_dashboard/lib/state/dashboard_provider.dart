@@ -107,6 +107,25 @@ class DashboardProvider extends ChangeNotifier {
   // API METHODS
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /// Loads all required data for the dashboard in parallel.
+  /// Typically called after the login process is complete and the dashboard mounts.
+  Future<void> loadInitialDashboardData() async {
+    print('[Provider] loadInitialDashboardData() - Starting sequence');
+    
+    // Connect socket first
+    initializeRealtimeAlerts();
+    
+    // Trigger primary API calls in parallel. 
+    // Each method handles its own internal loading flag and the global app loading state.
+    await Future.wait([
+      checkHealth(),
+      fetchMetrics(),
+      fetchAlerts(resetPagination: true),
+    ]);
+    
+    print('[Provider] loadInitialDashboardData() - Sequence complete');
+  }
+
   /// Check backend health status
   Future<void> checkHealth() async {
     _healthCheckLoading = true;
@@ -240,6 +259,11 @@ class DashboardProvider extends ChangeNotifier {
   /// Initialize and connect to real-time alert socket
   /// Call this in your main app initialization (e.g., in initState of root widget)
   void initializeRealtimeAlerts() {
+    if (_socketEnabled) {
+      print('[Provider] Socket already enabled, skipping initialization');
+      return;
+    }
+
     try {
       _socketService = AlertSocketService();
       _socketService.initializeSocket(

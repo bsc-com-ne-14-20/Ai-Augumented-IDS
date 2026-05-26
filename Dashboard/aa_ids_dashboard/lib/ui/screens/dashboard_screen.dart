@@ -24,35 +24,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    
-    // Initialize dashboard provider for real-time alerts and API calls
-    final dashboardProvider = context.read<DashboardProvider>();
-    
-    print('[DashboardScreen] Initializing dashboard...');
-    dashboardProvider.initializeRealtimeAlerts();
-    
-    // Load backend metrics and initial alerts
-    print('[DashboardScreen] Calling checkHealth()...');
-    dashboardProvider.checkHealth();
-    
-    print('[DashboardScreen] Calling fetchMetrics()...');
-    dashboardProvider.fetchMetrics();
-    
-    print('[DashboardScreen] Calling fetchAlerts()...');
-    dashboardProvider.fetchAlerts();
-    
-    print('[DashboardScreen] All API calls initiated!');
-  }
 
-  // ── Notification helpers ───────────────────────────────────────
-
-  void _showNotification(String message, {Color? color}) {
-    setState(() {
-      _notificationMessage = message;
-      _notificationColor = color ?? AppColors.successReviewed;
-    });
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _notificationMessage = null);
+    // Trigger data loading sequence
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardProvider>().loadInitialDashboardData();
     });
   }
 
