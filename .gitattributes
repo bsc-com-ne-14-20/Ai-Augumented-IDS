@@ -1,0 +1,2 @@
+data/final/cicids_cv_*.csv filter=lfs diff=lfs merge=lfs -text
+*.csv filter=lfs diff=lfs merge=lfs -text
