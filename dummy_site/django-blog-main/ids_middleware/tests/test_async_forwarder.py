@@ -4,26 +4,13 @@ Unit tests for ids_middleware.async_forwarder.
 Verifies that:
 - forward_async submits send_to_ids to the executor.
 - forward_async handles a shut-down executor gracefully.
+
+Django is configured via conftest.py.
 """
 
-import sys
-import os
 from unittest.mock import patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
-import django
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(
-        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
-        INSTALLED_APPS=["django.contrib.contenttypes", "django.contrib.auth"],
-        SECRET_KEY="test-secret-key",
-    )
-    django.setup()
-
-from ids_middleware.async_forwarder import forward_async  # noqa: E402
+from ids_middleware.async_forwarder import forward_async
 
 SAMPLE_PAYLOAD = {"method": "GET", "path": "/", "query_string": "", "body": "", "headers": {}}
 

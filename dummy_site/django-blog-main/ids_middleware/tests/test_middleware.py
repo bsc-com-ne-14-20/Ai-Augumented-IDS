@@ -6,28 +6,15 @@ Verifies that:
 - forward_async is called with the correct payload.
 - Middleware does not crash when payload_builder raises.
 - Middleware does not crash when forward_async raises.
+
+Django is configured via conftest.py.
 """
 
-import sys
-import os
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
-import django
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(
-        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
-        INSTALLED_APPS=["django.contrib.contenttypes", "django.contrib.auth"],
-        SECRET_KEY="test-secret-key",
-    )
-    django.setup()
-
-from django.test import RequestFactory  # noqa: E402
-from django.http import HttpResponse  # noqa: E402
-from ids_middleware.middleware import IDSMiddleware  # noqa: E402
+from django.test import RequestFactory
+from django.http import HttpResponse
+from ids_middleware.middleware import IDSMiddleware
 
 factory = RequestFactory()
 

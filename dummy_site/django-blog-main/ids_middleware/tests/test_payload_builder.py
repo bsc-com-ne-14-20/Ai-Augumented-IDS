@@ -2,23 +2,12 @@
 Unit tests for ids_middleware.payload_builder.
 
 These tests use Django's RequestFactory so they don't need a running server.
+Django is configured via conftest.py.
 """
 
-import django
-from django.conf import settings
+from django.test import RequestFactory
 
-# Minimal Django setup so we can use RequestFactory without a full project.
-if not settings.configured:
-    settings.configure(
-        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
-        INSTALLED_APPS=["django.contrib.contenttypes", "django.contrib.auth"],
-        SECRET_KEY="test-secret-key",
-    )
-    django.setup()
-
-from django.test import RequestFactory  # noqa: E402
-
-from ids_middleware.payload_builder import (  # noqa: E402
+from ids_middleware.payload_builder import (
     extract_http_method,
     extract_path,
     extract_query_string,

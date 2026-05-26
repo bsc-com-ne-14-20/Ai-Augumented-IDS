@@ -2,28 +2,13 @@
 Unit tests for ids_middleware.ids_client.
 
 We mock urllib.request.urlopen so no real network calls are made.
+Django is configured via conftest.py.
 """
 
 import json
-import sys
-import os
 from unittest.mock import patch, MagicMock
 
-# Ensure the django-blog-main directory is on the path so relative imports work.
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
-import django
-from django.conf import settings
-
-if not settings.configured:
-    settings.configure(
-        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
-        INSTALLED_APPS=["django.contrib.contenttypes", "django.contrib.auth"],
-        SECRET_KEY="test-secret-key",
-    )
-    django.setup()
-
-from ids_middleware.ids_client import send_to_ids  # noqa: E402
+from ids_middleware.ids_client import send_to_ids
 
 
 SAMPLE_PAYLOAD = {
