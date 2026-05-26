@@ -18,6 +18,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
+# IDS middleware env vars (IDS_BACKEND_URL, IDS_API_KEY) are also loaded from .env above.
+# On production (Render/DigitalOcean) set them as platform environment variables instead.
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
