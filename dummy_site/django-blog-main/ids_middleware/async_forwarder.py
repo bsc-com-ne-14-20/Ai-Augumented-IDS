@@ -22,11 +22,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 from .ids_client import send_to_ids
 from .logger import logger
+from .config import IDS_MAX_WORKERS
 
 # Shared executor — created once at import time.
 # Reusing a single executor avoids the overhead of creating a new thread
 # for every HTTP request that passes through the middleware.
-_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="ids_fwd")
+_executor = ThreadPoolExecutor(max_workers=IDS_MAX_WORKERS, thread_name_prefix="ids_fwd")
 
 
 def forward_async(payload: dict) -> None:
