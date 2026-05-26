@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:aa_ids_dashboard/api/endpoints.dart';
 import 'package:aa_ids_dashboard/models/dashboard_models.dart';
+import 'dart:async';
 
 class DashboardApi {
 
@@ -11,7 +12,7 @@ class DashboardApi {
   Future<HealthStatus> checkHealth() async {
     try {
       final response = await http.get(Uri.parse(ApiEndpoints.health))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
       
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -19,6 +20,8 @@ class DashboardApi {
       } else {
         throw Exception('Failed to load health status: ${response.statusCode}');
       }
+    } on TimeoutException catch (_) {
+      throw Exception('Health check timeout - server not responding');
     } catch (e) {
       throw Exception('Health check error: $e');
     }
@@ -60,7 +63,7 @@ class DashboardApi {
   Future<MetricsData> fetchMetrics() async {
     try {
       final response = await http.get(Uri.parse(ApiEndpoints.metrics))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
       
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -68,6 +71,8 @@ class DashboardApi {
       } else {
         throw Exception('Failed to load metrics: ${response.statusCode}');
       }
+    } on TimeoutException catch (_) {
+      throw Exception('Metrics fetch timeout - server not responding');
     } catch (e) {
       throw Exception('Metrics fetch error: $e');
     }

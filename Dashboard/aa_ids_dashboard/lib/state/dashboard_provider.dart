@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:aa_ids_dashboard/api/dashboard_api.dart';
 import 'package:aa_ids_dashboard/api/alert_socket_service.dart';
@@ -50,6 +51,10 @@ class DashboardProvider extends ChangeNotifier {
   bool _socketConnected = false;
   bool _socketEnabled = false;
   String? _socketError;
+  
+  // Global loading state - shows when any critical operation is pending
+  bool _isAppLoading = false;
+  Timer? _loadingTimeout;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GETTERS
@@ -94,6 +99,9 @@ class DashboardProvider extends ChangeNotifier {
   bool get socketConnected => _socketConnected;
   bool get socketEnabled => _socketEnabled;
   String? get socketError => _socketError;
+  
+  // Global loading
+  bool get isAppLoading => _isAppLoading;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // API METHODS
@@ -103,6 +111,7 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> checkHealth() async {
     _healthCheckLoading = true;
     _healthError = null;
+    _setAppLoading(true);
     print('[Provider] checkHealth() - Request started');
     notifyListeners();
 
@@ -115,6 +124,7 @@ class DashboardProvider extends ChangeNotifier {
       print('[Provider] checkHealth() - Error: $_healthError');
     } finally {
       _healthCheckLoading = false;
+      _clearAppLoadingIfAllDone();
       notifyListeners();
     }
   }
@@ -149,6 +159,7 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> fetchMetrics() async {
     _metricsLoading = true;
     _metricsError = null;
+    _setAppLoading(true);
     print('[Provider] fetchMetrics() - Request started');
     notifyListeners();
 
@@ -161,6 +172,7 @@ class DashboardProvider extends ChangeNotifier {
       print('[Provider] fetchMetrics() - Error: $_metricsError');
     } finally {
       _metricsLoading = false;
+      _clearAppLoadingIfAllDone();
       notifyListeners();
     }
   }
@@ -175,6 +187,7 @@ class DashboardProvider extends ChangeNotifier {
   }) async {
     _detectionResultsLoading = true;
     _detectionResultsError = null;
+    _setAppLoading(true);
     
     if (resetPagination) {
       _currentPage = 1;
@@ -215,6 +228,7 @@ class DashboardProvider extends ChangeNotifier {
       print('[Provider] fetchAlerts() - Error: $_detectionResultsError');
     } finally {
       _detectionResultsLoading = false;
+      _clearAppLoadingIfAllDone();
       notifyListeners();
     }
   }
@@ -228,7 +242,10 @@ class DashboardProvider extends ChangeNotifier {
   void initializeRealtimeAlerts() {
     try {
       _socketService = AlertSocketService();
-      _socketService.initializeSocket(_handleNewAlert);
+      _socketService.initializeSocket(
+        _handleNewAlert,
+        onConnectionStatusChanged: _handleSocketConnectionStatusChange,
+      );
       _socketEnabled = true;
       _socketError = null;
       print('[Provider] Real-time alerts initialized');
@@ -238,6 +255,45 @@ class DashboardProvider extends ChangeNotifier {
       _socketEnabled = false;
       print('[Provider] Error initializing real-time alerts: $e');
       notifyListeners();
+    }
+  }
+
+  /// Handle socket connection status changes
+  void _handleSocketConnectionStatusChange(bool isConnected) {
+    _socketConnected = isConnected;
+    print('[Provider] Socket connection status changed: $_socketConnected');
+    
+    // Socket connected - clear loading state after a brief delay to allow UI to settle
+    if (isConnected) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _clearAppLoadingIfAllDone();
+        notifyListeners();
+      });
+    }
+    
+    notifyListeners();
+  }
+  
+  /// Set app loading state with automatic timeout
+  void _setAppLoading(bool value) {
+    _isAppLoading = value;
+    if (value) {
+      // Auto-clear loading state after 15 seconds (safety timeout)
+      _loadingTimeout?.cancel();
+      _loadingTimeout = Timer(const Duration(seconds: 15), () {
+        print('[Provider] ⚠️ Loading timeout - clearing loading state');
+        _clearAppLoadingIfAllDone();
+        notifyListeners();
+      });
+    }
+  }
+  
+  /// Clear app loading state if all critical operations are done
+  void _clearAppLoadingIfAllDone() {
+    if (!_healthCheckLoading && !_metricsLoading && !_detectionResultsLoading) {
+      _isAppLoading = false;
+      _loadingTimeout?.cancel();
+      print('[Provider] All critical operations completed - clearing loading state');
     }
   }
 
@@ -385,6 +441,7 @@ class DashboardProvider extends ChangeNotifier {
   /// Dispose of all resources including socket connection
   /// Call this when the provider is being destroyed
   void dispose() {
+    _loadingTimeout?.cancel();
     if (_socketEnabled) {
       _socketService.dispose();
     }

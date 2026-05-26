@@ -228,6 +228,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
+
+          // Loading overlay - shows while initial data is loading
+          if (dashboardProvider.isAppLoading)
+            Container(
+              color: isDark
+                  ? AppColors.background.withOpacity(0.7)
+                  : Colors.black.withOpacity(0.3),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isDark
+                              ? AppColors.accentBlueHighlight
+                              : AppColors.lightAccentBlueHighlight,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Loading Dashboard...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? AppColors.textLight
+                            : AppColors.lightTextPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

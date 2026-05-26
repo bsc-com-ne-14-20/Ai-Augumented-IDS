@@ -3,20 +3,17 @@ import 'package:provider/provider.dart';
 import '../theming/app_colors.dart';
 import 'theme_toggle_button.dart';
 import '/state/theme_provider.dart';
+import '/state/dashboard_provider.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String subtitle;
-  final String systemStatusText;
-  final bool isSystemActive;
   final VoidCallback? onMenuPressed; // For future drawer/menu
 
   const CustomAppBar({
     super.key,
     this.title = "AA-IDS Prototype",
     this.subtitle = "Hybrid HTTP Anomaly Detection",
-    this.systemStatusText = "System active",
-    this.isSystemActive = true,
     this.onMenuPressed,
   });
 
@@ -26,7 +23,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    final dashboardProvider = context.watch<DashboardProvider>();
     final isDark = themeProvider.isDarkTheme;
+    
+    // Get socket connection status
+    final isSystemActive = dashboardProvider.socketConnected;
+    final systemStatusColor = isSystemActive ? AppColors.successOnline : AppColors.highThreat;
+    final systemStatusText = isSystemActive ? "System active" : "System inactive";
 
     return Container(
       height: 48,
@@ -45,16 +48,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           // Left Side - Brand
           Row(
             children: [
-              // Animated Pulse Dot
+              // Animated Pulse Dot (socket status indicator)
               Container(
                 width: 7,
                 height: 7,
                 decoration: BoxDecoration(
-                  color: AppColors.successOnline,
+                  color: systemStatusColor,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.successOnline.withOpacity(0.6),
+                      color: systemStatusColor.withOpacity(0.6),
                       blurRadius: 6,
                       spreadRadius: 1,
                     ),
@@ -106,17 +109,19 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           // Right Side
           Row(
             children: [
-              // System Status
+              // System Status (Socket Connection Indicator)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.threatHighBg
-                      : AppColors.lightThreatHighBg,
+                  color: isSystemActive
+                      ? (isDark
+                          ? AppColors.threatHighBg
+                          : AppColors.lightThreatHighBg)
+                      : (isDark
+                          ? AppColors.threatHighBg
+                          : AppColors.lightThreatHighBg),
                   border: Border.all(
-                    color: isDark
-                        ? AppColors.threatHighBorder
-                        : AppColors.lightThreatHighBorder,
+                    color: systemStatusColor.withOpacity(0.4),
                   ),
                   borderRadius: BorderRadius.circular(5),
                 ),
@@ -125,17 +130,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Container(
                       width: 6,
                       height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.successOnline,
+                      decoration: BoxDecoration(
+                        color: systemStatusColor,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       systemStatusText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11.5,
-                        color: AppColors.successOnline,
+                        color: systemStatusColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
