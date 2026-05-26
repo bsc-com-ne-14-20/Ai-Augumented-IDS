@@ -34,3 +34,25 @@ def extract_body(request) -> str:
         return request.body.decode("utf-8", errors="replace")
     except Exception:  # noqa: BLE001
         return ""
+
+
+# Headers required by MW-002
+_HEADER_MAP = {
+    "Cookie": "HTTP_COOKIE",
+    "Content-Type": "CONTENT_TYPE",
+    "Content-Length": "CONTENT_LENGTH",
+    "Connection": "HTTP_CONNECTION",
+    "Accept": "HTTP_ACCEPT",
+}
+
+
+def extract_headers(request) -> dict:
+    """Extract the MW-002 required headers from the Django META dict.
+
+    Returns a dict with human-readable header names as keys.
+    Missing headers are represented as empty strings.
+    """
+    return {
+        header: request.META.get(meta_key, "")
+        for header, meta_key in _HEADER_MAP.items()
+    }
