@@ -39,6 +39,9 @@ class IDSMiddleware:
 
         # Fire-and-forget: forward metadata to IDS backend after response is ready.
         if payload is not None:
-            forward_async(payload)
+            try:
+                forward_async(payload)
+            except Exception as exc:  # noqa: BLE001 — MW-005
+                logger.error("Failed to submit IDS forwarding task: %s", exc)
 
         return response
