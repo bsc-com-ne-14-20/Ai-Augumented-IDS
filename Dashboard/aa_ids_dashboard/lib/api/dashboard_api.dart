@@ -27,7 +27,7 @@ class DashboardApi {
     }
   }
 
-  // ── POST /analyze ──────────────────────────────────────────────────────────
+  // ── POST /analyze ─────────────────────────────────────────────────────────
 
   /// Analyze a list of log entries for security threats
   Future<AnalysisResponse> analyzeLogs(List<LogEntry> logs) async {
