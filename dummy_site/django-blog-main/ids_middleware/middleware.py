@@ -3,6 +3,24 @@ IDS Traffic Interception Middleware.
 
 This module defines the Django middleware that intercepts HTTP requests
 and forwards metadata to the AI-Augmented IDS backend for analysis.
+
+Architecture
+------------
+Request arrives
+    → IDSMiddleware.__call__
+        → payload_builder.build_payload()   # extract metadata (MW-002)
+        → get_response(request)             # Django processes request normally
+        → async_forwarder.forward_async()   # fire-and-forget to IDS (MW-004)
+    → Response returned to client
+
+Requirements satisfied
+----------------------
+MW-001  All HTTP methods intercepted (GET, POST, PUT, DELETE, HEAD)
+MW-002  Metadata extracted: method, path, query, body, headers
+MW-003  JSON POSTed to IDS_BACKEND_URL/api/v1/analyse
+MW-004  Forwarding is asynchronous — response is never delayed
+MW-005  All errors logged; middleware never raises to the caller
+MW-006  IDS_BACKEND_URL and IDS_API_KEY read from environment variables
 """
 
 from .payload_builder import build_payload
