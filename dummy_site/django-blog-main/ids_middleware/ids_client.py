@@ -1,12 +1,19 @@
 """
-IDS backend HTTP client.
+IDS backend HTTP client (MW-003, MW-004, MW-005, MW-006).
 
 Responsible for POSTing request metadata to the Flask IDS backend.
 This module is intentionally kept separate from the middleware class
 so it can be tested and replaced independently.
 
-Built incrementally — timeout, auth header, and error handling
-will be added in subsequent commits.
+Responsibilities
+----------------
+- Serialise the payload dict as JSON.
+- Attach the X-IDS-API-Key authentication header (MW-006).
+- Enforce the 500 ms timeout (MW-004).
+- Log and swallow all errors so the middleware never crashes (MW-005).
+
+No third-party HTTP library is used — stdlib urllib keeps the dependency
+footprint minimal and avoids version conflicts with the host project.
 """
 
 import json
