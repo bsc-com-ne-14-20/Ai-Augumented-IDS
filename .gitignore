@@ -3,16 +3,7 @@ data/raw/
 
 # Duplicate/intermediate cleaned files
 data/processed/
-data/cleaned/
-
-# Large model files
-models/*.joblib
-models/*.pkl
-
-# Large feature files
-data/features/feature_matrix.csv
-data/final/train.csv
-data/final/test.csv
+data/cleaned/csic_cleaned.csv
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
@@ -22,4 +13,7 @@ __pycache__/
 *.pyc
 
 venv/
-aa_ids_backend/.venv/
+.venv/venv/
+.venv/
+models/*.joblib
+models/*.pkl
