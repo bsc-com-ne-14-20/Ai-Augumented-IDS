@@ -56,3 +56,17 @@ def extract_headers(request) -> dict:
         header: request.META.get(meta_key, "")
         for header, meta_key in _HEADER_MAP.items()
     }
+
+
+def build_payload(request) -> dict:
+    """Assemble the complete JSON payload to send to the IDS backend (MW-002, MW-003).
+
+    Returns a plain dict — the caller is responsible for JSON serialisation.
+    """
+    return {
+        "method": extract_http_method(request),
+        "path": extract_path(request),
+        "query_string": extract_query_string(request),
+        "body": extract_body(request),
+        "headers": extract_headers(request),
+    }
