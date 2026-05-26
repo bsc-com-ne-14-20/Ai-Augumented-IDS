@@ -77,6 +77,14 @@ class TestIDSMiddlewareResilience:
             resp = mw(req)
         assert resp.status_code == 200
 
+    def test_logs_warning_when_ids_backend_url_not_set(self, caplog):
+        """Should log a warning at init time when IDS_BACKEND_URL is empty."""
+        import logging
+        with patch("ids_middleware.middleware.IDS_BACKEND_URL", ""):
+            with caplog.at_level(logging.WARNING, logger="ids_middleware"):
+                IDSMiddleware(MagicMock(return_value=HttpResponse("OK")))
+        assert any("IDS_BACKEND_URL" in r.message for r in caplog.records)
+
 
 class TestIDSMiddlewareHttpMethods:
     """MW-001: verify all required HTTP methods are intercepted."""
