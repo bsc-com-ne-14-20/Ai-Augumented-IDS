@@ -17,6 +17,21 @@ from .config import IDS_BACKEND_URL, IDS_API_KEY, IDS_TIMEOUT
 from .logger import logger
 
 
+def _build_request(payload: dict) -> "urllib.request.Request":
+    """Build the urllib Request object for the IDS backend POST call."""
+    body = json.dumps(payload).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "X-IDS-API-Key": IDS_API_KEY,
+    }
+    return urllib.request.Request(
+        url=IDS_BACKEND_URL,
+        data=body,
+        headers=headers,
+        method="POST",
+    )
+
+
 def send_to_ids(payload: dict) -> None:
     """POST *payload* as JSON to the IDS backend analyse endpoint (MW-003).
 
@@ -28,18 +43,7 @@ def send_to_ids(payload: dict) -> None:
         logger.warning("IDS_BACKEND_URL is not set — skipping IDS forwarding")
         return
 
-    body = json.dumps(payload).encode("utf-8")
-    headers = {
-        "Content-Type": "application/json",
-        "X-IDS-API-Key": IDS_API_KEY,
-    }
-
-    req = urllib.request.Request(
-        url=IDS_BACKEND_URL,
-        data=body,
-        headers=headers,
-        method="POST",
-    )
+    req = _build_request(payload)
 
     try:
         with urllib.request.urlopen(req, timeout=IDS_TIMEOUT) as resp:
