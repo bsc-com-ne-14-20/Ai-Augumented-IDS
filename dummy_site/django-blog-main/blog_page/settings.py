@@ -55,6 +55,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # IDS traffic interception — must be last so it sees the final response
+    'ids_middleware.middleware.IDSMiddleware',
 ]
 
 ROOT_URLCONF = 'blog_page.urls'
