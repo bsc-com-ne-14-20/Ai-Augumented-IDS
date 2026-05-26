@@ -1,4 +1,5 @@
 {% extends "feature/base.html" %}
+{% load static %}
 
 {% block title %}{{ post.title }}{% endblock %}
 
@@ -13,7 +14,7 @@
           <h1 class="card-title mb-2">{{ post.title }}</h1>
           
           <div class="d-flex align-items-center mb-3">
-            <img src="{% if post.author.profile.image %}{{ post.author.profile.image.url }}{% else %}/media/default.jpg{% endif %}" 
+            <img src="{% if post.author.profile.image %}{{ post.author.profile.image.url }}{% else %}{% static 'default.jpg' %}{% endif %}" 
                  class="rounded-circle me-2" 
                  style="width: 40px; height: 40px; object-fit: cover;"
                  alt="{{ post.author.username }}">
