@@ -22,8 +22,12 @@ def register(request):
             # Check for specific field errors
             if form.errors.get('username'):
                 messages.error(request, "Username already exists or is invalid.")
-            elif form.errors.get('password1') or form.errors.get('password2'):
-                messages.error(request, "Passwords do not match or do not meet requirements.")
+            elif form.errors.get('password1'):
+                error_msg = form.errors['password1'][0]
+                messages.error(request, f"Password Error: {error_msg}")
+            elif form.errors.get('password2'):
+                error_msg = form.errors['password2'][0]
+                messages.error(request, f"Password Match Error: {error_msg}")
             elif form.non_field_errors():
                 messages.error(request, "Something went wrong — please review your input.")
             else:
