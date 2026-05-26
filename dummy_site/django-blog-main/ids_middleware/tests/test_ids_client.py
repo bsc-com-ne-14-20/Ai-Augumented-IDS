@@ -75,6 +75,21 @@ class TestSendToIds:
             # Must not raise
             send_to_ids(SAMPLE_PAYLOAD)
 
+    def test_sends_api_key_header(self, monkeypatch):
+        """Should include X-IDS-API-Key header in the request."""
+        monkeypatch.setattr("ids_middleware.ids_client.IDS_BACKEND_URL", "http://fake-ids/api/v1/analyse")
+        monkeypatch.setattr("ids_middleware.ids_client.IDS_API_KEY", "my-secret-key")
+
+        mock_resp = MagicMock()
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp.status = 200
+
+        with patch("ids_middleware.ids_client.urllib.request.urlopen", return_value=mock_resp) as mock_open:
+            send_to_ids(SAMPLE_PAYLOAD)
+            req_arg = mock_open.call_args[0][0]
+            assert req_arg.get_header("X-ids-api-key") == "my-secret-key"
+
     def test_handles_unexpected_exception_gracefully(self, monkeypatch):
         """Should log error and not raise on any unexpected exception."""
         monkeypatch.setattr("ids_middleware.ids_client.IDS_BACKEND_URL", "http://fake-ids/api/v1/analyse")
