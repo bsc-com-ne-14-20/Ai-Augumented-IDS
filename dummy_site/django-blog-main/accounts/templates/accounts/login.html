@@ -1,0 +1,70 @@
+{% extends "feature/base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-12 col-md-6 col-lg-4">
+    <article class="card shadow-sm border-0 rounded-3">
+      <div class="card-body p-4">
+        <h2 class="card-title mb-4 text-center">Login</h2>
+
+        <!-- Display non-field errors (like invalid credentials) -->
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {% for error in form.non_field_errors %}
+              {{ error }}
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'auth-login' %}" novalidate>
+          {% csrf_token %}
+
+          {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+          {% endif %}
+
+          {% for field in form %}
+            <div class="mb-3">
+              <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                {{ field.label }}
+              </label>
+              {{ field }}
+              
+              <!-- Display field-specific errors -->
+              {% if field.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in field.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary fw-semibold py-2">
+              Login
+            </button>
+          </div>
+
+          <p class="text-center mt-3 mb-0">
+            <small class="text-muted">
+              Don't have an account?
+              <a href="{% url 'auth-register' %}" class="text-decoration-none">Register</a>
+            </small>
+          </p>
+        </form>
+      </div>
+    </article>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('input').forEach(input => {
+    input.classList.add('form-control');
+  });
+</script>
+{% endblock %}
