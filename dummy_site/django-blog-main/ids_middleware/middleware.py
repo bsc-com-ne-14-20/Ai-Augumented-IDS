@@ -64,6 +64,12 @@ class IDSMiddleware:
         if payload is not None:
             try:
                 forward_async(payload)
+                logger.debug(
+                    "IDS forwarding submitted for %s %s (response %s)",
+                    payload.get("method"),
+                    payload.get("path"),
+                    response.status_code,
+                )
             except Exception as exc:  # noqa: BLE001 — MW-005
                 logger.error("Failed to submit IDS forwarding task: %s", exc)
 
