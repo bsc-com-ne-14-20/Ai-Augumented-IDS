@@ -72,7 +72,8 @@ def build_alert_payload(
         "detection_source": source,
         "severity":         engine_result.get("severity"),
         "attack_type":      engine_result.get("attack_type", "UNKNOWN_ANOMALY"),
-        "rule_triggered":   engine_result.get("rule_triggered"),
+        # Accept both 'rule_triggered' (CRS adapter) and 'matched_rule' (rule_engine)
+        "rule_triggered":   engine_result.get("rule_triggered") or engine_result.get("matched_rule"),
         "confidence":       engine_result.get("confidence"),
         "affected_field":   engine_result.get("affected_field"),
         "request_summary": {
