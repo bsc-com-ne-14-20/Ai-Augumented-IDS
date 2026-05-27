@@ -92,9 +92,17 @@ class Config:
         # ── ML Model Paths ────────────────────────────────────────────────────
         self.ML_MODEL_PATH: str = os.environ.get(
             "ML_MODEL_PATH",
-            str(self._project_root / "models" / "rf_model.joblib")
+            str(self._project_root / "models" / "rf_combined.pkl")
         )
-        
+
+        # XGBoost attack-type classifier (layer 2 of stacked ensemble).
+        # Trained on attack samples only; classifies SQLI / XSS / PATH_TRAVERSAL / OTHER.
+        # SRS ML-003: XGBoost is the authoritative attack-type classifier.
+        self.XGB_MODEL_PATH: str = os.environ.get(
+            "XGB_MODEL_PATH",
+            str(self._project_root / "models" / "xgb_model.pkl")
+        )
+
         self.ML_SCALER_PATH: str = os.environ.get(
             "ML_SCALER_PATH",
             str(self._project_root / "data" / "final" / "scaler.pkl")
@@ -213,8 +221,12 @@ class Config:
         # Validate file paths exist for ML models and data files
         ml_model_path = Path(self.ML_MODEL_PATH)
         if not ml_model_path.exists():
-            warnings.append(f"ML model file not found: {self.ML_MODEL_PATH}")
-        
+            warnings.append(f"RF model file not found: {self.ML_MODEL_PATH}")
+
+        ml_xgb_path = Path(self.XGB_MODEL_PATH)
+        if not ml_xgb_path.exists():
+            warnings.append(f"XGB model file not found: {self.XGB_MODEL_PATH}")
+
         ml_scaler_path = Path(self.ML_SCALER_PATH)
         if not ml_scaler_path.exists():
             warnings.append(f"ML scaler file not found: {self.ML_SCALER_PATH}")
@@ -286,17 +298,20 @@ class Config:
         logger.info(f"CORS Origins: {self.SOCKETIO_CORS_ORIGINS}")
         
         # ML configuration
-        logger.info(f"ML Model Path: {self.ML_MODEL_PATH}")
+        logger.info(f"ML Model Path (RF): {self.ML_MODEL_PATH}")
+        logger.info(f"ML Model Path (XGB): {self.XGB_MODEL_PATH}")
         logger.info(f"ML Scaler Path: {self.ML_SCALER_PATH}")
         logger.info(f"ML Feature Names Path: {self.ML_FEATURE_NAMES_PATH}")
         logger.info(f"ML Confidence Threshold: {self.ML_CONFIDENCE_THRESHOLD}")
-        
+
         # Check if ML files exist
         ml_model_exists = Path(self.ML_MODEL_PATH).exists()
+        ml_xgb_exists = Path(self.XGB_MODEL_PATH).exists()
         ml_scaler_exists = Path(self.ML_SCALER_PATH).exists()
         ml_features_exists = Path(self.ML_FEATURE_NAMES_PATH).exists()
-        
-        logger.info(f"ML Model File Exists: {ml_model_exists}")
+
+        logger.info(f"RF Model File Exists: {ml_model_exists}")
+        logger.info(f"XGB Model File Exists: {ml_xgb_exists}")
         logger.info(f"ML Scaler File Exists: {ml_scaler_exists}")
         logger.info(f"ML Feature Names File Exists: {ml_features_exists}")
         
