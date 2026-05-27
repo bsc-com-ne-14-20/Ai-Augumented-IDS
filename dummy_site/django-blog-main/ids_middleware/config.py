@@ -15,8 +15,10 @@ IDS_BACKEND_URL: str = os.environ.get("IDS_BACKEND_URL", "")
 IDS_API_KEY: str = os.environ.get("IDS_API_KEY", "")
 
 # Maximum time (seconds) to wait for the IDS backend before giving up.
-# Can be overridden via IDS_TIMEOUT env var. Default is 500 ms (MW-004).
-IDS_TIMEOUT: float = float(os.environ.get("IDS_TIMEOUT", "0.5"))
+# Can be overridden via IDS_TIMEOUT env var.
+# Default is 2.0s — the ML pipeline takes 50-200ms plus HTTP overhead,
+# so 500ms (the original default) causes silent drops under normal load.
+IDS_TIMEOUT: float = float(os.environ.get("IDS_TIMEOUT", "2.0"))
 
 # Number of background worker threads in the IDS forwarding thread pool.
 # Increase for high-traffic sites; keep low to avoid thread exhaustion.
