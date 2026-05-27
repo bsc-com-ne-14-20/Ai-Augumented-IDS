@@ -77,7 +77,9 @@ def build_alert_payload(
         "affected_field":   engine_result.get("affected_field"),
         "request_summary": {
             "method":       raw_log_entry.get("method", ""),
-            "path":         raw_log_entry.get("path", ""),
+            # Use 'url' (normalised by schema from 'path') with 'path' as fallback
+            "path":         raw_log_entry.get("url", raw_log_entry.get("path", "")),
+            "url":          raw_log_entry.get("url", raw_log_entry.get("path", "")),
             "query_string": raw_log_entry.get("query_string", ""),
         },
     }
@@ -103,7 +105,8 @@ def build_clean_payload(raw_log_entry: dict[str, Any]) -> dict[str, Any]:
         "affected_field":   None,
         "request_summary": {
             "method":       raw_log_entry.get("method", ""),
-            "path":         raw_log_entry.get("path", ""),
+            "path":         raw_log_entry.get("url", raw_log_entry.get("path", "")),
+            "url":          raw_log_entry.get("url", raw_log_entry.get("path", "")),
             "query_string": raw_log_entry.get("query_string", ""),
         },
     }
@@ -130,7 +133,8 @@ def build_error_payload(
         "error":            error_message,
         "request_summary": {
             "method":       raw_log_entry.get("method", ""),
-            "path":         raw_log_entry.get("path", ""),
+            "path":         raw_log_entry.get("url", raw_log_entry.get("path", "")),
+            "url":          raw_log_entry.get("url", raw_log_entry.get("path", "")),
             "query_string": raw_log_entry.get("query_string", ""),
         },
     }
@@ -159,9 +163,10 @@ def run_pipeline(raw_log_entry: dict[str, Any]) -> dict[str, Any]:
     # ── Feature extraction ────────────────────────────────────────────────────
     try:
         # Convert raw_log_entry to the format expected by HTTPFeatureExtractor
+        # Schema normalises 'path' → 'url', so always use 'url' with 'path' fallback
         http_request = {
             "method": raw_log_entry.get("method", "GET"),
-            "url": raw_log_entry.get("url", "/"),
+            "url": raw_log_entry.get("url", raw_log_entry.get("path", "/")),
             "query_string": raw_log_entry.get("query_string", ""),
             "body": raw_log_entry.get("body", ""),
             "headers": raw_log_entry.get("headers", {}),
