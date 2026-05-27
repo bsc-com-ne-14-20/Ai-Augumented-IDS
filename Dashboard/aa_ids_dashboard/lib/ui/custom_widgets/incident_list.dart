@@ -71,16 +71,18 @@ class _IncidentListState extends State<IncidentList> {
     final status = _reviewedStatus(inc);
     Incident resolved = inc;
 
-    if (status.toLowerCase() == 'pending') {
+    // If incident is unreviewed (any status other than 'Yes'), mark it as reviewed
+    if (status.toLowerCase() != 'yes') {
       // Apply locally first — this frame, not the next.
       setState(() {
         _statusOverrides[inc.id] = 'Yes';
         _selectedId = inc.id;
       });
       resolved = inc.copyWith(reviewedStatus: 'Yes');
-      // Notify parent to keep master list in sync.
+      // Notify parent to keep master list in sync and update backend
       widget.onIncidentStatusUpdated?.call(resolved);
     } else {
+      // Already reviewed, just select it
       setState(() => _selectedId = inc.id);
     }
 
