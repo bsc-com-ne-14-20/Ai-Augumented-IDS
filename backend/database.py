@@ -21,6 +21,42 @@ if not DATABASE_URL:
     db_path = Path(__file__).parent.parent / "ids.db"
     DATABASE_URL = f"sqlite:///{db_path}"
 
+# Test PostgreSQL connectivity before committing to it; fall back to SQLite
+_using_postgres = DATABASE_URL.startswith("postgresql") or DATABASE_URL.startswith("postgres")
+if _using_postgres:
+    import socket as _socket
+    try:
+        # Quick TCP probe to see if PostgreSQL port is reachable
+        from urllib.parse import urlparse as _urlparse
+        _parsed = _urlparse(DATABASE_URL)
+        _host = _parsed.hostname or "localhost"
+        _port = _parsed.port or 5432
+        _s = _socket.create_connection((_host, _port), timeout=1)
+        _s.close()
+        # Port is open — now test actual authentication with a short-lived connection
+        import psycopg2 as _pg2
+        try:
+            _conn = _pg2.connect(DATABASE_URL, connect_timeout=2)
+            _conn.close()
+            logger.info("PostgreSQL reachable and authenticated at %s:%s — using PostgreSQL", _host, _port)
+        except Exception as _auth_exc:
+            logger.warning(
+                "PostgreSQL authentication failed (%s) — falling back to SQLite. "
+                "Fix DATABASE_URL credentials or remove DATABASE_URL to use SQLite.",
+                _auth_exc
+            )
+            db_path = Path(__file__).parent.parent / "ids.db"
+            DATABASE_URL = f"sqlite:///{db_path}"
+            _using_postgres = False
+    except (OSError, Exception):
+        logger.warning(
+            "PostgreSQL not reachable — falling back to SQLite for this session. "
+            "Set DATABASE_URL to a valid PostgreSQL URL or leave it unset to use SQLite."
+        )
+        db_path = Path(__file__).parent.parent / "ids.db"
+        DATABASE_URL = f"sqlite:///{db_path}"
+        _using_postgres = False
+
 # Connection pool configuration
 # SQLite uses NullPool (no pooling) as it doesn't support concurrent connections well
 # PostgreSQL uses QueuePool with connection pooling
