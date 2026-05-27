@@ -429,64 +429,79 @@ def emit_alert(verdict_payload: dict[str, Any]) -> None:
         )
         return
     
-    # Handle ATTACK and ANOMALY verdicts with 'alert' event
-    if verdict in ("ATTACK", "ANOMALY"):
+    # Build the unified 'alert' event payload for ALL verdicts (ATTACK, ANOMALY, CLEAN).
+    # The dashboard listens exclusively to the 'alert' event and uses is_attack to
+    # distinguish attacks from clean traffic. Emitting 'clean_request' separately
+    # means clean traffic never appears in the live feed — fixed here.
+    #
+    # SRS §3.2.2: Events emitted for EVERY request (attacks AND clean).
+    # is_attack: true  → ATTACK or ANOMALY
+    # is_attack: false → CLEAN
+    if verdict in ("ATTACK", "ANOMALY", "CLEAN"):
+        is_attack = verdict in ("ATTACK", "ANOMALY")
+        request_summary = verdict_payload.get("request_summary", {})
+
         event_data = {
             "event": "alert",
             "data": {
                 "alert_id":         verdict_payload.get("alert_id"),
                 "timestamp":        verdict_payload.get("timestamp"),
                 "verdict":          verdict,
+                "is_attack":        is_attack,
                 "detection_source": verdict_payload.get("detection_source"),
                 "severity":         verdict_payload.get("severity"),
                 "attack_type":      verdict_payload.get("attack_type"),
                 "confidence":       verdict_payload.get("confidence"),
-                "request_summary":  verdict_payload.get("request_summary", {}),
+                "matched_rule":     verdict_payload.get("rule_triggered"),
                 "rule_triggered":   verdict_payload.get("rule_triggered"),
+                "affected_field":   verdict_payload.get("affected_field"),
+                "request_summary":  request_summary,
+                # Flatten key fields to top level for SRS §3.2.2 compatibility
+                "method":           request_summary.get("method", ""),
+                "url":              request_summary.get("path", ""),
+                "query_string":     request_summary.get("query_string", ""),
             },
         }
 
-        # Use safe emission with enhanced error handling and context
-        alert_context = f"verdict={verdict} attack_type={verdict_payload.get('attack_type')} alert_id={verdict_payload.get('alert_id')}"
-        emission_success = _safe_emit("alert", event_data, context=alert_context)
-        
-        if emission_success:
-            log.info(
-                "Socket.IO alert emitted: verdict=%s attack_type=%s confidence=%s alert_id=%s",
-                verdict, verdict_payload.get("attack_type"), verdict_payload.get("confidence"),
-                verdict_payload.get("alert_id")
-            )
-        # Error already logged by _safe_emit if emission failed
-    
-    # Handle CLEAN verdicts with 'clean_request' event
-    elif verdict == "CLEAN":
-        event_data = {
-            "event": "clean_request",
-            "data": {
-                "alert_id":         verdict_payload.get("alert_id"),
-                "timestamp":        verdict_payload.get("timestamp"),
-                "verdict":          verdict,
-                "detection_source": verdict_payload.get("detection_source"),
-                "request_summary":  verdict_payload.get("request_summary", {}),
-            },
-        }
+        context = (
+            f"verdict={verdict} attack_type={verdict_payload.get('attack_type')} "
+            f"alert_id={verdict_payload.get('alert_id')}"
+        )
+        emission_success = _safe_emit("alert", event_data, context=context)
 
-        # Use safe emission with enhanced error handling and context
-        clean_context = f"alert_id={verdict_payload.get('alert_id')} source={verdict_payload.get('detection_source')}"
-        emission_success = _safe_emit("clean_request", event_data, context=clean_context)
-        
         if emission_success:
-            log.debug(
-                "Socket.IO clean_request emitted: alert_id=%s source=%s",
-                verdict_payload.get("alert_id"), verdict_payload.get("detection_source")
-            )
-        # Error already logged by _safe_emit if emission failed
-    
+            if is_attack:
+                log.info(
+                    "Socket.IO alert emitted: verdict=%s attack_type=%s confidence=%s alert_id=%s",
+                    verdict, verdict_payload.get("attack_type"),
+                    verdict_payload.get("confidence"), verdict_payload.get("alert_id"),
+                )
+            else:
+                log.debug(
+                    "Socket.IO clean alert emitted: alert_id=%s",
+                    verdict_payload.get("alert_id"),
+                )
+
+        # Also emit the legacy 'clean_request' event for backward compatibility
+        if not is_attack:
+            clean_data = {
+                "event": "clean_request",
+                "data": {
+                    "alert_id":        verdict_payload.get("alert_id"),
+                    "timestamp":       verdict_payload.get("timestamp"),
+                    "verdict":         verdict,
+                    "detection_source": verdict_payload.get("detection_source"),
+                    "request_summary": request_summary,
+                },
+            }
+            _safe_emit("clean_request", clean_data,
+                       context=f"alert_id={verdict_payload.get('alert_id')}")
+
     # ERROR verdicts are silently ignored to avoid flooding the dashboard
     elif verdict == "ERROR":
-        log.debug("Skipping Socket.IO emission for ERROR verdict (alert_id=%s)", 
-                 verdict_payload.get("alert_id"))
-    
+        log.debug("Skipping Socket.IO emission for ERROR verdict (alert_id=%s)",
+                  verdict_payload.get("alert_id"))
+
     else:
-        log.warning("Unknown verdict type for Socket.IO emission: %s (alert_id=%s)", 
-                   verdict, verdict_payload.get("alert_id"))
+        log.warning("Unknown verdict type for Socket.IO emission: %s (alert_id=%s)",
+                    verdict, verdict_payload.get("alert_id"))
