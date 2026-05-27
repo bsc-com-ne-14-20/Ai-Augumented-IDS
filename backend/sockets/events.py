@@ -162,7 +162,7 @@ def persist_alert(verdict_payload: dict[str, Any], raw_log_entry: dict[str, Any]
             url=sanitize_string(raw_log_entry.get("url", "/"), 8192),
             source_ip=sanitize_string(raw_log_entry.get("source_ip", "unknown"), 45),  # IPv6 max length
             verdict=sanitize_string(verdict_payload.get("verdict", "ERROR"), 32),
-            attack_type=sanitize_string(verdict_payload.get("attack_type"), 64),
+            attack_type=sanitize_string(verdict_payload.get("attack_type"), 100),
             rule_id=sanitize_string(verdict_payload.get("rule_triggered"), 128),
             stage=sanitize_string(verdict_payload.get("detection_source"), 32),
             confidence=verdict_payload.get("confidence") or 0.0,  # Default to 0.0 if None
