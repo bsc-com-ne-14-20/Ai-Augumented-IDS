@@ -50,16 +50,17 @@ class _IncidentListState extends State<IncidentList> {
 
   List<Incident> get _filtered {
     return widget.incidents.where((inc) {
+      final threatLower = inc.threat.toLowerCase();
+      final statusLower = _reviewedStatus(inc).toLowerCase();
+      
       switch (_selectedFilter) {
         case 'High':
-          return inc.threat.toLowerCase() == 'high';
+          return threatLower == 'high';
         case 'Medium':
-          return inc.threat.toLowerCase() == 'med' ||
-              inc.threat.toLowerCase() == 'medium';
+          return threatLower == 'med' || threatLower == 'medium';
         case 'Unreviewed':
-          // Use the local override so a just-reviewed row disappears
-          // immediately without waiting for the parent rebuild.
-          return _reviewedStatus(inc).toLowerCase() == 'pending';
+          // Show incidents that are NOT marked as reviewed ('Yes')
+          return statusLower != 'yes';
         default:
           return true;
       }

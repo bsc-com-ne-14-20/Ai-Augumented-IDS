@@ -42,7 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Calculate total unreviewed from backend alerts
     final int unreviewedCount = dashboardProvider.incidents
-        .where((i) => i.reviewedStatus.toLowerCase() == 'no')
+        .where((i) => i.reviewedStatus.toLowerCase() != 'yes')
         .length;
 
     return Scaffold(
