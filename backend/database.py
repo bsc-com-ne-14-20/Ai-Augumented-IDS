@@ -126,7 +126,7 @@ class Alert(Base):
     is_proxy       = Column(Boolean, default=False)
     is_tor         = Column(Boolean, default=False)
     verdict        = Column(String(10), index=True)
-    attack_type    = Column(String(50), nullable=True, index=True)
+    attack_type    = Column(String(100), nullable=True, index=True)  # CHANGED: String(100) to support XGBoost multi-class labels (SQLI/XSS/PATH_TRAVERSAL/OTHER)
     rule_id        = Column(String(50), nullable=True, index=True)  # Matched rule ID for signature-based detections
     stage          = Column(String(10), index=True)
     confidence     = Column(Float)
@@ -307,21 +307,21 @@ def update_stats(db, result: dict):
     # Both ATTACK and ANOMALY verdicts are considered attacks
     if result["verdict"] in ("ATTACK", "ANOMALY"):
         stats.total_attacks += 1
-        
-        # Update attack counts by type
+
+        # Update attack counts by type.
+        # Rule engine returns:  SQL_INJECTION, XSS, PATH_TRAVERSAL, CRLF_INJECTION, BRUTE_FORCE
+        # ML engine (XGBoost):  SQLI, XSS, PATH_TRAVERSAL, OTHER
+        # Both sources are mapped to the same statistics columns where possible.
         attack_type = result.get("attack_type")
         if attack_type:
-            # Map attack types to statistics columns
-            # Rule engine returns: SQL_INJECTION, XSS, PATH_TRAVERSAL, CRLF_INJECTION, BRUTE_FORCE
-            # ML engine returns: UNKNOWN_ANOMALY
             if attack_type in ("SQLI", "SQL_INJECTION"):
                 stats.sqli_count += 1
             elif attack_type == "XSS":
                 stats.xss_count += 1
-            elif attack_type == "PATH_TRAVERSAL":
+            elif attack_type in ("PATH_TRAVERSAL",):
                 stats.traversal_count += 1
             else:
-                # CRLF_INJECTION, BRUTE_FORCE, UNKNOWN_ANOMALY, and any other types
+                # CRLF_INJECTION, BRUTE_FORCE, OTHER, and any future XGBoost classes
                 stats.other_count += 1
     else:
         # CLEAN and ERROR verdicts are counted as normal
@@ -330,9 +330,12 @@ def update_stats(db, result: dict):
     # Update detection source breakdown
     detection_source = result.get("stage")
     if detection_source == "RULE":
-        stats.crs_caught += 1  # Rule engine detections (using crs_caught for rule-based)
+        stats.crs_caught += 1  # Rule engine detections
     elif detection_source == "ML":
-        stats.rf_caught += 1  # ML engine detections (using rf_caught for ML-based)
+        stats.rf_caught += 1   # ML engine detections (RF layer)
+        # Also increment xgb_classified when XGBoost classified the attack type
+        if result.get("attack_type") and result.get("verdict") == "ANOMALY":
+            stats.xgb_classified += 1
     
     # Update VPN count
     if result.get("is_vpn"):
