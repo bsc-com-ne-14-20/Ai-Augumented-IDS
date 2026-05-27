@@ -216,21 +216,48 @@ class HTTPFeatureExtractor:
         
         return features
     
+    @staticmethod
+    def _normalise_headers(headers: Dict) -> Dict[str, str]:
+        """
+        Normalise HTTP header keys to lowercase with underscores.
+
+        Handles all casing variants sent by different clients:
+          'Content-Type'  → 'content_type'
+          'content-type'  → 'content_type'
+          'content_type'  → 'content_type'  (already normalised)
+          'Cookie'        → 'cookie'
+          'HTTP_COOKIE'   → 'http_cookie'   (Django META format)
+
+        SRS Requirement: FE-004 (graceful handling of missing/variant fields)
+        Called at the start of extract_header_features() before any header access.
+        """
+        if not headers:
+            return {}
+        normalised = {}
+        for k, v in headers.items():
+            key = str(k).lower().replace("-", "_").replace(" ", "_")
+            normalised[key] = str(v) if v is not None else ""
+        return normalised
+
     def extract_header_features(self, headers: Dict, method: str, body: str, content_length: int) -> Dict[str, float]:
         """Extracts 13 header/context features."""
         features = {}
-        
+
+        # Normalise header keys before any access (handles Title-Case, hyphen, underscore variants)
+        headers = self._normalise_headers(headers)
+
         # FE-004: Semantic defaults for missing fields
         cookie = headers.get('cookie', 'none') if headers else 'none'
         cookie = str(cookie).strip() if cookie else 'none'
         if not cookie or cookie.lower() == 'missing':
             cookie = 'none'
-        
+
+        # Accept both 'content_type' and 'content-type' (already normalised above)
         content_type = headers.get('content_type', 'none') if headers else 'none'
         content_type = str(content_type).strip() if content_type else 'none'
         if not content_type or content_type.lower() == 'missing':
             content_type = 'none'
-        
+
         connection = headers.get('connection', 'keep-alive') if headers else 'keep-alive'
         connection = str(connection).strip().lower() if connection else 'keep-alive'
         
