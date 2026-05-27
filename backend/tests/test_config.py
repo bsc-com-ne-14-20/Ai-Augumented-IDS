@@ -473,7 +473,7 @@ class TestConfigValidation:
             
             # Check that warnings were logged
             warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
-            assert any("ML model file not found" in msg for msg in warning_messages)
+            assert any("model file not found" in msg for msg in warning_messages)  # RF or XGB model
             assert any("ML scaler file not found" in msg for msg in warning_messages)
             assert any("ML feature names file not found" in msg for msg in warning_messages)
         
@@ -540,7 +540,7 @@ class TestConfigLoggingSummary:
         
         assert any("AA-IDS Backend Configuration Summary" in msg for msg in info_messages)
         assert any("Server Port:" in msg for msg in info_messages)
-        assert any("ML Model Path:" in msg for msg in info_messages)
+        assert any("ML Model Path" in msg for msg in info_messages)  # matches "ML Model Path (RF):" or "ML Model Path:"
         assert any("ML Confidence Threshold:" in msg for msg in info_messages)
         assert any("Rule Engine Threshold:" in msg for msg in info_messages)
         assert any("Brute Force Request Threshold:" in msg for msg in info_messages)
@@ -584,7 +584,7 @@ class TestConfigLoggingSummary:
         
         # Check that file existence is logged
         info_messages = [record.message for record in caplog.records if record.levelname == "INFO"]
-        assert any("ML Model File Exists:" in msg for msg in info_messages)
+        assert any("RF Model File Exists:" in msg or "ML Model File Exists:" in msg for msg in info_messages)
         assert any("ML Scaler File Exists:" in msg for msg in info_messages)
         assert any("ML Feature Names File Exists:" in msg for msg in info_messages)
     

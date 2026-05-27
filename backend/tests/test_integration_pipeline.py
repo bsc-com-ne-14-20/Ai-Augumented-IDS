@@ -24,13 +24,18 @@ class TestPipelineIntegration:
             "source_ip": "192.168.1.100",
             "timestamp": "2024-01-15T10:30:00Z"
         }
-        
+
         result = run_pipeline(request)
-        
+
         # Should return CLEAN verdict (or ANOMALY if ML model detects something)
         assert result["verdict"] in ["CLEAN", "ANOMALY"]
         assert "alert_id" in result
         assert "timestamp" in result
+        # attack_type must be None for CLEAN, or a valid XGB label for ANOMALY
+        if result["verdict"] == "CLEAN":
+            assert result["attack_type"] is None
+        else:
+            assert result["attack_type"] in (None, "SQLI", "XSS", "PATH_TRAVERSAL", "OTHER")
     
     def test_sqli_attack_detected_by_rules(self):
         """Test that SQLi attack is detected by rule engine."""
@@ -208,9 +213,9 @@ class TestPipelineIntegration:
                 "timestamp": "2024-01-15T10:30:02Z"
             }
         ]
-        
+
         results = [run_pipeline(req) for req in requests]
-        
+
         assert len(results) == 3
         # First request should be clean
         assert results[0]["verdict"] in ["CLEAN", "ANOMALY"]
@@ -218,6 +223,103 @@ class TestPipelineIntegration:
         assert results[1]["verdict"] == "ATTACK"
         # Third request should be clean
         assert results[2]["verdict"] in ["CLEAN", "ANOMALY"]
+
+    def test_ml_attack_type_flows_through_unchanged(self):
+        """
+        Verify the orchestrator does NOT modify attack_type from the ML engine.
+        XGBoost's predicted class label must reach the result dict unchanged.
+        SRS ML-003: XGBoost is the authoritative attack-type classifier.
+        """
+        from unittest.mock import patch
+        from backend.engines import ml_adapter
+
+        captured = {}
+
+        def mock_adapt_ml(features):
+            return {
+                "verdict":          "ANOMALY",
+                "is_attack":        True,
+                "detection_source": "ml_engine",
+                "attack_type":      "XSS",   # specific XGBoost label
+                "confidence":       0.91,
+                "xgb_confidence":   0.96,
+                "severity":         "critical",
+                "matched_rule":     None,
+            }
+
+        with patch("backend.pipeline.orchestrator.adapt_ml_model", side_effect=mock_adapt_ml):
+            result = run_pipeline({
+                "method": "GET",
+                "url": "/search?q=<script>alert(1)</script>",
+                "path": "/search",
+                "query_string": "q=<script>alert(1)</script>",
+                "body": "",
+                "headers": {},
+                "content_length": 0,
+                "source_ip": "192.168.1.100",
+            })
+
+        # The rule engine will catch this XSS first — so we need a request
+        # that bypasses the rule engine. Use a clean-looking URL.
+        def mock_rule_clean(request, features):
+            return {
+                "is_attack": False,
+                "detection_source": "rule_engine",
+                "attack_type": None,
+                "matched_rule": None,
+                "confidence": None,
+                "severity": None,
+                "affected_field": None,
+            }
+
+        with patch("backend.pipeline.orchestrator.rule_engine_evaluate",
+                   side_effect=mock_rule_clean):
+            with patch("backend.pipeline.orchestrator.adapt_ml_model",
+                       side_effect=mock_adapt_ml):
+                result = run_pipeline({
+                    "method": "GET",
+                    "url": "/products/",
+                    "path": "/products/",
+                    "query_string": "id=5",
+                    "body": "",
+                    "headers": {},
+                    "content_length": 0,
+                    "source_ip": "192.168.1.100",
+                })
+
+        assert result["verdict"] == "ANOMALY"
+        assert result["attack_type"] == "XSS", (
+            f"Orchestrator must not modify attack_type from ML engine. "
+            f"Expected 'XSS', got '{result['attack_type']}'"
+        )
+        assert result["confidence"] == 0.91
+
+    def test_ml_anomaly_attack_type_is_valid_xgb_label(self):
+        """
+        When the ML engine fires, attack_type must be a valid XGBoost label
+        (SQLI, XSS, PATH_TRAVERSAL, OTHER) — never 'UNKNOWN_ANOMALY'.
+        """
+        from backend.engines.ml_adapter import XGB_LABEL_MAP
+        valid_labels = set(XGB_LABEL_MAP.values())
+
+        # Use a request that bypasses the rule engine but may trigger ML
+        request = {
+            "method": "GET",
+            "url": "/products/",
+            "path": "/products/",
+            "query_string": "id=5",
+            "body": "",
+            "headers": {},
+            "content_length": 0,
+            "source_ip": "192.168.1.100",
+        }
+        result = run_pipeline(request)
+
+        if result["verdict"] == "ANOMALY" and result["detection_source"] == "ML":
+            assert result["attack_type"] in valid_labels, (
+                f"ML engine attack_type '{result['attack_type']}' not in valid XGB labels: "
+                f"{valid_labels}. 'UNKNOWN_ANOMALY' is no longer a valid value."
+            )
 
 
 if __name__ == "__main__":
