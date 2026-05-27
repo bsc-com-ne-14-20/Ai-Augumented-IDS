@@ -1,7 +1,7 @@
 """
 pipeline/orchestrator.py
 ========================
-Sequential detection pipeline: rule engine first, ML model only if clean.
+Sequential detection pipeline: rule engine first, ML stacked ensemble only if clean.
 
 Architecture
 ------------
@@ -12,8 +12,10 @@ Architecture
                     ATTACK? YES ──► build_alert_payload(source="RULE")
                     ATTACK? NO  ──►
                            │
-                       adapt_ml_model()
-                           │
+                       adapt_ml_model()   ← stacked ensemble: RF (layer 1) + XGBoost (layer 2)
+                           │              RF is the binary gate (is_attack).
+                           │              XGBoost classifies attack type (SRS ML-003).
+                           │              attack_type comes from XGBoost — not hardcoded.
                    ANOMALY? YES ──► build_alert_payload(source="ML")
                    ANOMALY? NO  ──► build_clean_payload()
 
@@ -24,6 +26,8 @@ Design constraints
   • Socket.IO events are emitted by route handlers, not here.
   • Engine failures on a single entry return an error verdict without crashing
     the entire batch.
+  • The orchestrator does NOT modify attack_type from the ML engine result.
+    XGBoost's predicted class label flows through unchanged to the alert record.
 """
 
 import logging
@@ -71,7 +75,11 @@ def build_alert_payload(
         "verdict":          verdict,
         "detection_source": source,
         "severity":         engine_result.get("severity"),
-        "attack_type":      engine_result.get("attack_type", "UNKNOWN_ANOMALY"),
+        # attack_type comes directly from the engine result:
+        #   Rule engine: deterministic type (SQL_INJECTION, XSS, PATH_TRAVERSAL, etc.)
+        #   ML engine:   XGBoost predicted class label (SQLI, XSS, PATH_TRAVERSAL, OTHER)
+        # The orchestrator never overrides or hardcodes this value.
+        "attack_type":      engine_result.get("attack_type"),
         # Accept both 'rule_triggered' (CRS adapter) and 'matched_rule' (rule_engine)
         "rule_triggered":   engine_result.get("rule_triggered") or engine_result.get("matched_rule"),
         "confidence":       engine_result.get("confidence"),
@@ -193,6 +201,9 @@ def run_pipeline(raw_log_entry: dict[str, Any]) -> dict[str, Any]:
         return build_alert_payload(raw_log_entry, features, rule_result, source="RULE")
 
     # ── ML model (only if rule engine returned CLEAN) ─────────────────────────
+    # Stacked ensemble: RF (layer 1, binary gate) + XGBoost (layer 2, attack-type).
+    # RF determines is_attack. XGBoost determines attack_type (SRS ML-002, ML-003).
+    # The orchestrator passes the result directly — attack_type is NOT modified here.
     try:
         ml_result = adapt_ml_model(features)
     except Exception as exc:
