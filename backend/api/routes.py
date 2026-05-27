@@ -147,7 +147,9 @@ def _update_metrics(result: dict[str, Any]) -> None:
 
     elif verdict == "ANOMALY":
         _metrics["total_anomalies_detected"] += 1
-        attack_type = result.get("attack_type") or "UNKNOWN_ANOMALY"
+        # attack_type comes from XGBoost's predicted class label (SQLI/XSS/PATH_TRAVERSAL/OTHER)
+        # or None if the ML engine did not classify. Never hardcode "UNKNOWN_ANOMALY".
+        attack_type = result.get("attack_type") or "OTHER"
         _metrics["attack_type_breakdown"][attack_type] = (
             _metrics["attack_type_breakdown"].get(attack_type, 0) + 1
         )
@@ -188,6 +190,7 @@ def health() -> Any:
     """
     return jsonify({
         "status": "ok",
+        # models_loaded is True only when BOTH RF and XGBoost are loaded (SRS FL-004)
         "models_loaded": is_ml_model_loaded(),
         "db_connected": check_connection_health(),
         "rule_engine_loaded": is_rule_engine_loaded(),
