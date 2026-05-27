@@ -1,0 +1,75 @@
+{
+  "rules": [
+    {
+      "id": "SQLI-001",
+      "name": "SQL Injection - UNION SELECT",
+      "category": "SQL_INJECTION",
+      "pattern": "(?i)(union\\s+(all\\s+)?select)",
+      "fields": ["query_string", "body", "cookie"],
+      "severity": "critical"
+    },
+    {
+      "id": "SQLI-002",
+      "name": "SQL Injection - OR 1=1",
+      "category": "SQL_INJECTION",
+      "pattern": "(?i)(or\\s+['\"]?\\d+['\"]?\\s*=\\s*['\"]?\\d+)",
+      "fields": ["query_string", "body", "cookie"],
+      "severity": "critical"
+    },
+    {
+      "id": "SQLI-003",
+      "name": "SQL Injection - Comment Injection",
+      "category": "SQL_INJECTION",
+      "pattern": "(--|#|/\\*|\\*/)",
+      "fields": ["query_string", "body"],
+      "severity": "critical"
+    },
+    {
+      "id": "XSS-001",
+      "name": "XSS - Script Tag",
+      "category": "XSS",
+      "pattern": "(?i)(<script[^>]*>|</script>)",
+      "fields": ["query_string", "body"],
+      "severity": "critical"
+    },
+    {
+      "id": "XSS-002",
+      "name": "XSS - Event Handler",
+      "category": "XSS",
+      "pattern": "(?i)(on(load|error|click|mouseover)\\s*=)",
+      "fields": ["query_string", "body"],
+      "severity": "critical"
+    },
+    {
+      "id": "PT-001",
+      "name": "Path Traversal - Directory Traversal",
+      "category": "PATH_TRAVERSAL",
+      "pattern": "(\\.\\./|\\.\\.\\\\/|%2e%2e%2f|%2e%2e/|\\.\\. %2f)",
+      "fields": ["url", "query_string"],
+      "severity": "high"
+    },
+    {
+      "id": "PT-002",
+      "name": "Path Traversal - Sensitive Files",
+      "category": "PATH_TRAVERSAL",
+      "pattern": "(?i)(/etc/passwd|/windows/system32|boot\\.ini)",
+      "fields": ["url", "query_string"],
+      "severity": "high"
+    },
+    {
+      "id": "CRLF-001",
+      "name": "CRLF Injection",
+      "category": "CRLF_INJECTION",
+      "pattern": "(?i)(%0d|%0a|\\r|\\n)(set-cookie:|content-length:|location:)",
+      "fields": ["url", "headers"],
+      "severity": "high"
+    },
+    {
+      "id": "BF-001",
+      "name": "Brute Force Attack",
+      "category": "BRUTE_FORCE",
+      "description": "Detected via per-IP counter, not regex",
+      "severity": "medium"
+    }
+  ]
+}
