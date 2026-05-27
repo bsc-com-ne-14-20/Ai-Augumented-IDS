@@ -178,9 +178,10 @@ def evaluate(request_data: Dict[str, Any], features: Dict[str, float]) -> Dict[s
             "confidence": None
         }
     """
-    # Extract fields
+    # Extract fields — accept both 'url' and 'path' (middleware sends 'path',
+    # schema normalises to 'url', but rule engine should handle both)
     method = str(request_data.get("method", "GET")).upper()
-    url = str(request_data.get("url", ""))
+    url = str(request_data.get("url", request_data.get("path", "")))
     path = str(request_data.get("path", url.split("?")[0]))
     query_string = str(request_data.get("query_string", ""))
     body = str(request_data.get("body", ""))
