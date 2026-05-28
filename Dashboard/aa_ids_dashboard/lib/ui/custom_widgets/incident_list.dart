@@ -24,6 +24,15 @@ class _IncidentListState extends State<IncidentList> {
   String _selectedFilter = 'All';
   String? _selectedId;
 
+  // Responsive breakpoints
+  static const double mobileBreakpoint = 600;
+  static const double tabletBreakpoint = 1024;
+
+  bool _isMobile(BuildContext context) => MediaQuery.of(context).size.width < mobileBreakpoint;
+  bool _isTablet(BuildContext context) => MediaQuery.of(context).size.width >= mobileBreakpoint && 
+                                           MediaQuery.of(context).size.width < tabletBreakpoint;
+  bool _isDesktop(BuildContext context) => MediaQuery.of(context).size.width >= tabletBreakpoint;
+
   // Local override map: incidentId → reviewedStatus.
   // Status changes are written here immediately so the UI updates
   // in the same frame, independent of the parent rebuild cycle.
@@ -114,11 +123,353 @@ class _IncidentListState extends State<IncidentList> {
     }
   }
 
+  // Responsive filter buttons - wraps on mobile, row on desktop
+  Widget _buildFilterButtons(bool isDark) {
+    final buttons = ['All', 'High', 'Medium', 'Unreviewed'];
+    final width = MediaQuery.of(context).size.width;
+    
+    if (width < mobileBreakpoint) {
+      return Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: buttons.map((f) {
+          final active = _selectedFilter == f;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedFilter = f),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: active
+                    ? (isDark ? AppColors.darkActiveBg : AppColors.lightActiveBg)
+                    : (isDark ? AppColors.darkSecondaryBg : AppColors.lightSecondaryBg),
+                border: Border.all(
+                  color: active
+                      ? (isDark ? AppColors.accentBlueHighlight : AppColors.lightAccentBlueHighlight)
+                      : (isDark ? AppColors.borderSecondary : AppColors.lightBorderSecondary),
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                f,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: active
+                      ? (isDark ? AppColors.accentBlueHighlight : AppColors.lightAccentBlueHighlight)
+                      : (isDark ? AppColors.textLabel : AppColors.lightTextLabel),
+                  fontWeight: active ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+    
+    return Row(
+      children: buttons.map((f) {
+        final active = _selectedFilter == f;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedFilter = f),
+          child: Container(
+            margin: const EdgeInsets.only(left: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: active
+                  ? (isDark ? AppColors.darkActiveBg : AppColors.lightActiveBg)
+                  : (isDark ? AppColors.darkSecondaryBg : AppColors.lightSecondaryBg),
+              border: Border.all(
+                color: active
+                    ? (isDark ? AppColors.accentBlueHighlight : AppColors.lightAccentBlueHighlight)
+                    : (isDark ? AppColors.borderSecondary : AppColors.lightBorderSecondary),
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              f,
+              style: TextStyle(
+                fontSize: 11,
+                color: active
+                    ? (isDark ? AppColors.accentBlueHighlight : AppColors.lightAccentBlueHighlight)
+                    : (isDark ? AppColors.textLabel : AppColors.lightTextLabel),
+                fontWeight: active ? FontWeight.w500 : FontWeight.normal,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Build card-based layout for mobile/tablet
+  Widget _buildCardView(bool isDark, List<Incident> rows) {
+    if (rows.isEmpty) {
+      return Center(
+        child: Text(
+          'No incidents match this filter',
+          style: TextStyle(
+            color: isDark ? AppColors.textMutedDark : AppColors.lightTextMutedDark,
+            fontSize: 12,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
+        final inc = rows[index];
+        final accent = _threatColor(inc.threat);
+        final status = _reviewedStatus(inc);
+        final reviewed = status.toLowerCase() == 'yes';
+        final statusColor = reviewed ? AppColors.successReviewed : AppColors.warningPending;
+        final isSelected = _selectedId == inc.id;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: InkWell(
+            onTap: () => _onTap(inc),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? (isDark ? AppColors.darkActiveBg : AppColors.lightActiveBg)
+                    : Colors.transparent,
+                border: Border.all(
+                  color: isSelected
+                      ? (isDark ? AppColors.accentBlueHighlight : AppColors.lightAccentBlueHighlight)
+                      : (isDark ? AppColors.borderDark : AppColors.lightBorderDark),
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'ID: ${inc.id}',
+                          style: TextStyle(
+                            fontFamily: 'Courier New',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Color(0xFF6E7681) : AppColors.lightTextLabel,
+                          ),
+                        ),
+                      ),
+                      _Chip(
+                        label: status,
+                        fg: statusColor,
+                        bg: statusColor.withOpacity(0.15),
+                        border: statusColor.withOpacity(0.4),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Time: ${inc.time}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isDark ? Color(0xFF4E5966) : AppColors.lightTextLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Endpoint: ${inc.endpoint}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isDark ? Color(0xFFC9D1D9) : AppColors.lightTextLabel,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Text(
+                              'Method: ',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: isDark ? AppColors.textMutedDark : AppColors.lightTextMutedDark,
+                              ),
+                            ),
+                            Expanded(
+                              child: _Chip(
+                                label: inc.method,
+                                fg: AppColors.accentBlueSoft,
+                                bg: isDark ? AppColors.darkSecondaryBg : AppColors.lightSecondaryBg,
+                                border: isDark ? AppColors.borderSecondary : AppColors.lightBorderSecondary,
+                                mono: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Text(
+                              'Threat: ',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: isDark ? AppColors.textMutedDark : AppColors.lightTextMutedDark,
+                              ),
+                            ),
+                            Expanded(
+                              child: _Chip(
+                                label: inc.threat == 'Med' ? 'Medium' : inc.threat,
+                                fg: accent,
+                                bg: accent.withOpacity(0.15),
+                                border: accent.withOpacity(0.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Build table layout for desktop
+  Widget _buildTableView(bool isDark, List<Incident> rows) {
+    if (rows.isEmpty) {
+      return Center(
+        child: Text(
+          'No incidents match this filter',
+          style: TextStyle(
+            color: isDark ? AppColors.textMutedDark : AppColors.lightTextMutedDark,
+            fontSize: 12,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
+        final inc = rows[index];
+        final accent = _threatColor(inc.threat);
+        final status = _reviewedStatus(inc);
+        final reviewed = status.toLowerCase() == 'yes';
+        final statusColor = reviewed ? AppColors.successReviewed : AppColors.warningPending;
+        final isSelected = _selectedId == inc.id;
+
+        return InkWell(
+          onTap: () => _onTap(inc),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isDark ? AppColors.darkActiveBg : AppColors.lightActiveBg)
+                  : Colors.transparent,
+              border: Border(
+                left: isSelected
+                    ? BorderSide(
+                        color: isDark ? AppColors.accentBlueHighlight : AppColors.lightAccentBlueHighlight,
+                        width: 2)
+                    : BorderSide.none,
+                bottom: BorderSide(color: isDark ? AppColors.darkSecondaryBg : AppColors.lightSecondaryBg),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    inc.id,
+                    style: TextStyle(
+                      fontFamily: 'Courier New',
+                      fontSize: 12,
+                      color: isDark ? Color(0xFF6E7681) : AppColors.lightTextLabel,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    inc.time,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Color(0xFF4E5966) : AppColors.lightTextLabel,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 4,
+                  child: Text(
+                    inc.endpoint,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Color(0xFFC9D1D9) : AppColors.lightTextLabel,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Builder(builder: (context) {
+                      final methodColors = _getChipColors('method', isDark, null);
+                      return _Chip(
+                        label: inc.method,
+                        fg: methodColors['fg']!,
+                        bg: methodColors['bg']!,
+                        border: methodColors['border']!,
+                        mono: true,
+                      );
+                    }),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _Chip(
+                      label: inc.threat == 'Med' ? 'Medium' : inc.threat,
+                      fg: accent,
+                      bg: accent.withOpacity(0.15),
+                      border: accent.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _Chip(
+                      label: status,
+                      fg: statusColor,
+                      bg: statusColor.withOpacity(0.15),
+                      border: statusColor.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final isDark = themeProvider.isDarkTheme;
     final rows = _filtered;
+    final isDesktop = _isDesktop(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -132,9 +483,9 @@ class _IncidentListState extends State<IncidentList> {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'INCIDENT LOG',
@@ -145,55 +496,8 @@ class _IncidentListState extends State<IncidentList> {
                     letterSpacing: 0.8,
                   ),
                 ),
-                Row(
-                  children: ['All', 'High', 'Medium', 'Unreviewed']
-                      .map((f) {
-                    final active = _selectedFilter == f;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = f),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? (isDark
-                                  ? AppColors.darkActiveBg
-                                  : AppColors.lightActiveBg)
-                              : (isDark
-                                  ? AppColors.darkSecondaryBg
-                                  : AppColors.lightSecondaryBg),
-                          border: Border.all(
-                            color: active
-                                ? (isDark
-                                    ? AppColors.accentBlueHighlight
-                                    : AppColors.lightAccentBlueHighlight)
-                                : (isDark
-                                    ? AppColors.borderSecondary
-                                    : AppColors.lightBorderSecondary),
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          f,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: active
-                                ? (isDark
-                                    ? AppColors.accentBlueHighlight
-                                    : AppColors.lightAccentBlueHighlight)
-                                : (isDark
-                                    ? AppColors.textLabel
-                                    : AppColors.lightTextLabel),
-                            fontWeight: active
-                                ? FontWeight.w500
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                const SizedBox(height: 10),
+                _buildFilterButtons(isDark),
               ],
             ),
           ),
@@ -203,172 +507,35 @@ class _IncidentListState extends State<IncidentList> {
             color: isDark ? AppColors.borderDark : AppColors.lightBorderDark,
           ),
 
-          // Column headers
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 10),
-            color: isDark ? AppColors.darkHeaderBg : AppColors.lightHeaderBg,
-            child: const Row(
-              children: [
-                Expanded(flex: 2, child: _ColHeader('ID')),
-                Expanded(flex: 2, child: _ColHeader('TIME')),
-                Expanded(flex: 4, child: _ColHeader('ENDPOINT')),
-                Expanded(flex: 2, child: _ColHeader('METHOD')),
-                Expanded(flex: 3, child: _ColHeader('THREAT')),
-                Expanded(flex: 3, child: _ColHeader('REVIEWED')),
-              ],
+          // Show table header only on desktop
+          if (isDesktop)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: isDark ? AppColors.darkHeaderBg : AppColors.lightHeaderBg,
+              child: const Row(
+                children: [
+                  Expanded(flex: 2, child: _ColHeader('ID')),
+                  Expanded(flex: 2, child: _ColHeader('TIME')),
+                  Expanded(flex: 4, child: _ColHeader('ENDPOINT')),
+                  Expanded(flex: 2, child: _ColHeader('METHOD')),
+                  Expanded(flex: 3, child: _ColHeader('THREAT')),
+                  Expanded(flex: 3, child: _ColHeader('REVIEWED')),
+                ],
+              ),
             ),
-          ),
 
-          // Rows
+          // Content area - responsive
           Expanded(
-            child: rows.isEmpty
-                ? Center(
-                    child: Text(
-                      'No incidents match this filter',
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.textMutedDark
-                            : AppColors.lightTextMutedDark,
-                        fontSize: 12,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: rows.length,
-                    itemBuilder: (context, index) {
-                      if (index < 0 || index >= rows.length) {
-                        return const SizedBox.shrink();
-                      }
-                      final inc = rows[index];
-                      final accent = _threatColor(inc.threat);
-                      final status = _reviewedStatus(inc);
-                      final reviewed = status.toLowerCase() == 'yes';
-                      final statusColor = reviewed
-                          ? AppColors.successReviewed
-                          : AppColors.warningPending;
-                      final isSelected = _selectedId == inc.id;
-
-                      return InkWell(
-                        onTap: () => _onTap(inc),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 11),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? (isDark
-                                    ? AppColors.darkActiveBg
-                                    : AppColors.lightActiveBg)
-                                : Colors.transparent,
-                            border: Border(
-                              left: isSelected
-                                  ? BorderSide(
-                                      color: isDark
-                                          ? AppColors.accentBlueHighlight
-                                          : AppColors.lightAccentBlueHighlight,
-                                      width: 2)
-                                  : BorderSide.none,
-                              bottom: BorderSide(
-                                  color: isDark
-                                      ? AppColors.darkSecondaryBg
-                                      : AppColors.lightSecondaryBg),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  inc.id,
-                                  style: TextStyle(
-                                    fontFamily: 'Courier New',
-                                    fontSize: 12,
-                                    color: isDark
-                                        ? Color(0xFF6E7681)
-                                        : AppColors.lightTextLabel,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  inc.time,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isDark
-                                        ? Color(0xFF4E5966)
-                                        : AppColors.lightTextLabel,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 4,
-                                child: Text(
-                                  inc.endpoint,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isDark
-                                        ? Color(0xFFC9D1D9)
-                                        : AppColors.lightTextLabel,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Builder(builder: (context) {
-                                    final methodColors = _getChipColors('method', isDark, null);
-                                    return _Chip(
-                                      label: inc.method,
-                                      fg: methodColors['fg']!,
-                                      bg: methodColors['bg']!,
-                                      border: methodColors['border']!,
-                                      mono: true,
-                                    );
-                                  }),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: _Chip(
-                                    label: inc.threat == 'Med'
-                                        ? 'Medium'
-                                        : inc.threat,
-                                    fg: accent,
-                                    bg: accent.withOpacity(0.15),
-                                    border: accent.withOpacity(0.4),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: _Chip(
-                                    label: status,
-                                    fg: statusColor,
-                                    bg: statusColor.withOpacity(0.15),
-                                    border:
-                                        statusColor.withOpacity(0.4),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+            child: isDesktop
+                ? _buildTableView(isDark, rows)
+                : _buildCardView(isDark, rows),
           ),
         ],
       ),
     );
   }
 }
+
 
 class _ColHeader extends StatelessWidget {
   final String label;

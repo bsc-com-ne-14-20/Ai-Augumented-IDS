@@ -28,13 +28,55 @@ class DashboardMetricCard extends StatelessWidget {
     this.showBottomSection = true,   // Default is true for backward compatibility
   });
 
+  // Responsive breakpoints
+  static const double mobileBreakpoint = 600;
+  static const double tabletBreakpoint = 1024;
+
+  bool _isMobile(BuildContext context) => MediaQuery.of(context).size.width < mobileBreakpoint;
+  bool _isTablet(BuildContext context) => MediaQuery.of(context).size.width >= mobileBreakpoint && 
+                                           MediaQuery.of(context).size.width < tabletBreakpoint;
+  bool _isDesktop(BuildContext context) => MediaQuery.of(context).size.width >= tabletBreakpoint;
+
+  double _getValueFontSize(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < mobileBreakpoint) return 32;
+    if (width < tabletBreakpoint) return 38;
+    return 46;
+  }
+
+  double _getTitleFontSize(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < mobileBreakpoint) return 11;
+    if (width < tabletBreakpoint) return 12;
+    return 12.5;
+  }
+
+  double _getPadding(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < mobileBreakpoint) return 14;
+    if (width < tabletBreakpoint) return 16;
+    return 20;
+  }
+
+  double _getIconSize(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < mobileBreakpoint) return 16;
+    if (width < tabletBreakpoint) return 18;
+    return 20;
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final isDark = themeProvider.isDarkTheme;
+    final padding = _getPadding(context);
+    final valueFontSize = _getValueFontSize(context);
+    final titleFontSize = _getTitleFontSize(context);
+    final iconSize = _getIconSize(context);
+    final isMobile = _isMobile(context);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
         borderRadius: BorderRadius.circular(borderRadius),
@@ -56,14 +98,14 @@ class DashboardMetricCard extends StatelessWidget {
           // Icon + Title
           Row(
             children: [
-              if (icon != null) ...[
+              if (icon != null && !isMobile) ...[
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: accentColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, color: accentColor, size: 20),
+                  child: Icon(icon, color: accentColor, size: iconSize),
                 ),
                 const SizedBox(width: 12),
               ],
@@ -71,7 +113,7 @@ class DashboardMetricCard extends StatelessWidget {
                 child: Text(
                   title.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: titleFontSize,
                     fontWeight: FontWeight.w500,
                     color: isDark
                         ? AppColors.textLabelLight
@@ -83,13 +125,13 @@ class DashboardMetricCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 18),
+          SizedBox(height: isMobile ? 12 : 18),
 
           // Main Value
           Text(
             value,
             style: TextStyle(
-              fontSize: 46,
+              fontSize: valueFontSize,
               fontWeight: FontWeight.w600,
               color: accentColor,
               height: 1.0,
@@ -99,12 +141,15 @@ class DashboardMetricCard extends StatelessWidget {
 
           // Bottom Section (Badge + Subtitle) - Now Optional
           if (showBottomSection && (badgeText != null || subtitle != null)) ...[
-            const SizedBox(height: 14),
+            SizedBox(height: isMobile ? 10 : 14),
             Row(
               children: [
                 if (badgeText != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 8 : 10,
+                      vertical: isMobile ? 3 : 4,
+                    ),
                     decoration: BoxDecoration(
                       color: accentColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -113,7 +158,7 @@ class DashboardMetricCard extends StatelessWidget {
                       badgeText!,
                       style: TextStyle(
                         color: accentColor,
-                        fontSize: 12,
+                        fontSize: isMobile ? 10 : 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -125,7 +170,7 @@ class DashboardMetricCard extends StatelessWidget {
                     child: Text(
                       subtitle!,
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: isMobile ? 11 : 12.5,
                         color: isDark
                             ? AppColors.textLabelSecondary
                             : AppColors.lightTextLabelSecondary,
