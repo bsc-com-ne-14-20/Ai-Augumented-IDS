@@ -3,12 +3,18 @@ AA-IDS Feature Extraction Pipeline
 ===================================
 
 Implements Software Requirements Specification v1.0 (Section 4.2)
-- FE-001: Exactly 53 numeric features
+- FE-001: Exactly 49 numeric features (updated from 53; 4 CSIC-bias features dropped)
 - FE-002: URL decoding for attack detection
 - FE-003: Shannon entropy computation
 - FE-004: Semantic handling of missing fields
 - FE-005: Reproducible, JSON-serializable output
 - FE-006: <50ms per request performance
+
+Dropped features (CSIC 2010 structural bias — near-zero variance in real traffic):
+  - cookie_is_present    (CSIC always has JSESSIONID; real first-visit has no cookie)
+  - cookie_length        (always ~43 chars in CSIC benign; 0 in real first-visit)
+  - connection_is_close  (CSIC always sends Connection: close; browsers use keep-alive)
+  - connection_keep_alive (inverse of above; same domain-shift problem)
 
 """
 
@@ -23,14 +29,17 @@ class HTTPFeatureExtractor:
     """
     Production-grade HTTP feature extractor for AA-IDS.
     
-    Extracts 53 features from raw HTTP requests for ML classification.
+    Extracts 49 features from raw HTTP requests for ML classification.
     
     Features:
     - 12 URL features (url_length, url_path_depth, etc.)
     - 11 Query string features (query_length, query_params, etc.)
     - 13 Body/payload features (body_length, body_entropy, etc.)
     - 4 HTTP method features (method_get, method_post, etc.)
-    - 13 Header features (cookie, content_type, connection, etc.)
+    - 9 Header features (cookie_has_sqli/xss, content_type, anomaly flags)
+
+    Dropped (CSIC 2010 structural bias — not present in real browser traffic):
+    - cookie_is_present, cookie_length, connection_is_close, connection_keep_alive
     """
     
     # ===== ATTACK PATTERN DEFINITIONS (From CSIC 2010 analysis) =====
@@ -54,7 +63,7 @@ class HTTPFeatureExtractor:
     # Risky file extensions
     RISKY_EXTENSIONS = {'.php', '.asp', '.aspx', '.jsp', '.cgi', '.exe', '.sh', '.bat', '.cmd', '.pl', '.py'}
     
-    # Feature column names (matching  training data order)
+    # Feature column names (matching training data order)
     FEATURE_COLUMNS = [
         # URL features (12)
         'url_length', 'url_path_depth', 'url_num_dots', 'url_num_special',
@@ -71,11 +80,12 @@ class HTTPFeatureExtractor:
         'body_is_empty',
         # HTTP method features (4)
         'method_get', 'method_post', 'method_put', 'method_suspicious',
-        # Header features (13)
-        'cookie_length', 'cookie_has_sqli', 'cookie_has_xss', 'cookie_is_present',
+        # Header features (9) — cookie_is_present, cookie_length,
+        # connection_is_close, connection_keep_alive dropped (CSIC bias)
+        'cookie_has_sqli', 'cookie_has_xss',
         'content_type_is_form', 'content_type_is_json', 'content_type_is_none',
-        'connection_is_close', 'connection_keep_alive', 'post_no_content_type',
-        'get_with_body', 'post_empty_body', 'content_length_mismatch'
+        'post_no_content_type', 'get_with_body', 'post_empty_body',
+        'content_length_mismatch',
     ]
     
     def __init__(self, verbose=False):
@@ -84,8 +94,8 @@ class HTTPFeatureExtractor:
         self.extraction_times = []
         
         # Validating feature count
-        if len(self.FEATURE_COLUMNS) != 53:
-            raise ValueError(f"Expected 53 features, got {len(self.FEATURE_COLUMNS)}")
+        if len(self.FEATURE_COLUMNS) != 49:
+            raise ValueError(f"Expected 49 features, got {len(self.FEATURE_COLUMNS)}")
     
     # UTILITY FUNCTIONS
     
@@ -240,7 +250,7 @@ class HTTPFeatureExtractor:
         return normalised
 
     def extract_header_features(self, headers: Dict, method: str, body: str, content_length: int) -> Dict[str, float]:
-        """Extracts 13 header/context features."""
+        """Extracts 9 header/context features (4 CSIC-bias features dropped)."""
         features = {}
 
         # Normalise header keys before any access (handles Title-Case, hyphen, underscore variants)
@@ -258,40 +268,32 @@ class HTTPFeatureExtractor:
         if not content_type or content_type.lower() == 'missing':
             content_type = 'none'
 
-        connection = headers.get('connection', 'keep-alive') if headers else 'keep-alive'
-        connection = str(connection).strip().lower() if connection else 'keep-alive'
-        
         method = str(method).strip().upper()
         body = str(body).strip() if body else ""
-        
-        # Cookie features
-        features['cookie_length'] = len(cookie) if cookie != 'none' else 0
+
+        # Cookie security features (presence/length dropped — CSIC bias)
         features['cookie_has_sqli'] = float(self.has_pattern(cookie, self.SQLI_PATTERN))
         features['cookie_has_xss'] = float(self.has_pattern(cookie, self.XSS_PATTERN))
-        features['cookie_is_present'] = float(cookie != 'none')
-        
+
         # Content-Type features
         features['content_type_is_form'] = float('form' in content_type.lower())
         features['content_type_is_json'] = float('json' in content_type.lower())
         features['content_type_is_none'] = float(content_type == 'none')
-        
-        # Connection features
-        features['connection_is_close'] = float('close' in connection.lower())
-        features['connection_keep_alive'] = float('keep-alive' in connection.lower())
-        
+
         # Anomaly features
+        # (connection_is_close and connection_keep_alive dropped — CSIC bias)
         features['post_no_content_type'] = float(method == 'POST' and content_type == 'none')
         features['get_with_body'] = float(method == 'GET' and len(body) > 0)
         features['post_empty_body'] = float(method == 'POST' and len(body) == 0)
         features['content_length_mismatch'] = float(len(body) != content_length)
-        
+
         return features
     
     #  MAIN EXTRACTION FUNCTION 
     
     def extract_features(self, http_request: Dict) -> Dict[str, float]:
         """
-        Extract all 53 features from HTTP request.
+        Extract all 49 features from HTTP request.
         
         Implements FE-001 through FE-006 requirements.
         
@@ -299,7 +301,7 @@ class HTTPFeatureExtractor:
             http_request: Dictionary with HTTP request data
             
         Returns:
-            Dictionary with exactly 53 numeric features
+            Dictionary with exactly 49 numeric features
         """
         
         start_time = time.time()
@@ -327,8 +329,8 @@ class HTTPFeatureExtractor:
         features.update(self.extract_header_features(headers, method, body, content_length))
         
         # Validate
-        if len(features) != 53:
-            raise ValueError(f"Expected 53 features, got {len(features)}")
+        if len(features) != 49:
+            raise ValueError(f"Expected 49 features, got {len(features)}")
         
         # FE-004: Ensure all numeric, no NaN/Inf
         ordered_features = {}
