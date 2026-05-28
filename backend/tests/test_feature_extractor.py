@@ -2,7 +2,7 @@
 Test suite for HTTP feature extraction with real-world URLs.
 
 SRS Requirements: Section 4.2 (Feature Extraction Pipeline)
-- FE-001: Exactly 53 numeric features
+- FE-001: Exactly 49 numeric features
 - FE-002: URL decoding for attack detection
 - FE-003: Shannon entropy computation
 - FE-004: Semantic handling of missing fields
@@ -22,10 +22,10 @@ def extractor():
 
 
 class TestFeatureCount:
-    """Test that exactly 53 features are extracted."""
-    
+    """Test that exactly 49 features are extracted."""
+
     def test_feature_count_normal_request(self, extractor):
-        """SRS FE-001: Verify 53 features for normal request."""
+        """SRS FE-001: Verify 49 features for normal request."""
         request = {
             "method": "GET",
             "url": "/products?category=electronics",
@@ -34,14 +34,14 @@ class TestFeatureCount:
             "headers": {"accept": "text/html"},
             "content_length": 0,
         }
-        
+
         features = extractor.extract_features(request)
-        
-        assert len(features) == 53, f"Expected 53 features, got {len(features)}"
+
+        assert len(features) == 49, f"Expected 49 features, got {len(features)}"
         assert all(isinstance(v, (int, float)) for v in features.values())
-    
+
     def test_feature_count_attack_request(self, extractor):
-        """SRS FE-001: Verify 53 features for attack request."""
+        """SRS FE-001: Verify 49 features for attack request."""
         request = {
             "method": "POST",
             "url": "/login",
@@ -50,10 +50,10 @@ class TestFeatureCount:
             "headers": {"content-type": "application/x-www-form-urlencoded"},
             "content_length": 42,
         }
-        
+
         features = extractor.extract_features(request)
-        
-        assert len(features) == 53
+
+        assert len(features) == 49
 
 
 class TestRealWorldURLs:
@@ -72,12 +72,11 @@ class TestRealWorldURLs:
             },
             "content_length": 0,
         }
-        
+
         features = extractor.extract_features(request)
-        
+
         assert features["url_length"] > 0
         assert features["query_has_encoding"] == 1.0  # %3A encoding
-        assert features["cookie_is_present"] == 1.0
         assert features["method_get"] == 1.0
     
     def test_amazon_product_url(self, extractor):
@@ -144,12 +143,11 @@ class TestRealWorldURLs:
             },
             "content_length": 0,
         }
-        
+
         features = extractor.extract_features(request)
-        
+
         assert features["url_num_hyphens"] > 0
-        assert features["cookie_is_present"] == 1.0
-        assert features["cookie_length"] > 0
+        assert features["cookie_has_sqli"] == 0.0  # no SQLi in cookie
 
 
 class TestAttackDetection:
@@ -310,7 +308,7 @@ class TestMissingFields:
         assert features["body_length"] == 0
     
     def test_missing_cookie(self, extractor):
-        """SRS FE-004: Handle missing cookie."""
+        """SRS FE-004: Handle missing cookie — dropped features no longer present."""
         request = {
             "method": "GET",
             "url": "/page",
@@ -319,11 +317,15 @@ class TestMissingFields:
             "headers": {},
             "content_length": 0,
         }
-        
+
         features = extractor.extract_features(request)
-        
-        assert features["cookie_is_present"] == 0.0
-        assert features["cookie_length"] == 0
+
+        # cookie_is_present and cookie_length were dropped (CSIC bias)
+        assert "cookie_is_present" not in features
+        assert "cookie_length" not in features
+        # Security-pattern features are still present
+        assert features["cookie_has_sqli"] == 0.0
+        assert features["cookie_has_xss"] == 0.0
     
     def test_missing_content_type(self, extractor):
         """SRS FE-004: Handle missing content-type."""
@@ -456,11 +458,11 @@ class TestEdgeCases:
             "headers": {},
             "content_length": 0,
         }
-        
+
         features = extractor.extract_features(request)
-        
-        assert len(features) == 53
-    
+
+        assert len(features) == 49
+
     def test_empty_request(self, extractor):
         """Handle minimal request."""
         request = {
@@ -471,10 +473,10 @@ class TestEdgeCases:
             "headers": {},
             "content_length": 0,
         }
-        
+
         features = extractor.extract_features(request)
-        
-        assert len(features) == 53
+
+        assert len(features) == 49
         assert features["url_length"] == 1
         assert features["query_is_empty"] == 1.0
         assert features["body_is_empty"] == 1.0
@@ -482,18 +484,18 @@ class TestEdgeCases:
 
 class TestFeatureSchema:
     """Test that features match FEATURE_SCHEMA.json."""
-    
+
     def test_feature_names_match_schema(self, extractor):
-        """Verify feature names match FEATURE_SCHEMA.json."""
+        """Verify feature names match FEATURE_SCHEMA.json (49 features)."""
         import json
         from pathlib import Path
-        
+
         schema_path = Path(__file__).parent.parent.parent / "FEATURE_SCHEMA.json"
         with open(schema_path) as f:
             schema = json.load(f)
-        
+
         expected_features = schema["features"]
-        
+
         request = {
             "method": "GET",
             "url": "/test",
@@ -502,10 +504,10 @@ class TestFeatureSchema:
             "headers": {},
             "content_length": 0,
         }
-        
+
         features = extractor.extract_features(request)
         actual_features = list(features.keys())
-        
+
         assert actual_features == expected_features, \
             f"Feature mismatch:\nExpected: {expected_features}\nActual: {actual_features}"
 
