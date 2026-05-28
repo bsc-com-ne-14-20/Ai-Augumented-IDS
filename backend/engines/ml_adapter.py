@@ -145,7 +145,7 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
             "verdict": "CLEAN",
             "confidence": 0.0,
             "severity": None,
-            "attack_type": "UNKNOWN_ANOMALY",
+            "attack_type": None,
             "ml_unavailable": True,
         }
 
@@ -171,7 +171,7 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
             "verdict": "CLEAN",
             "confidence": 0.0,
             "severity": None,
-            "attack_type": "UNKNOWN_ANOMALY",
+            "attack_type": None,
             "scaling_error": True,
         }
 
@@ -187,7 +187,7 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
             "verdict":     "CLEAN",
             "confidence":  confidence,
             "severity":    None,
-            "attack_type": "UNKNOWN_ANOMALY",
+            "attack_type": None,
         }
 
     # Map confidence → severity
@@ -206,7 +206,7 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
         "verdict":     "ANOMALY",
         "confidence":  confidence,
         "severity":    severity,
-        "attack_type": "UNKNOWN_ANOMALY",
+        "attack_type": "STATISTICAL_ANOMALY",
     }
 
 
