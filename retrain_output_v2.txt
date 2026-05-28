@@ -1,0 +1,22 @@
+2026-05-28T03:37:39  INFO      ======================================================================
+2026-05-28T03:37:39  INFO      AA-IDS 49-Feature Retraining Script
+2026-05-28T03:37:39  INFO      ======================================================================
+2026-05-28T03:37:39  INFO      STEP 2a — Loading CSIC data from /home/yewo/Documents/Projects/Ai-Augumented-IDS/data/processed/csic_cleaned.csv
+2026-05-28T03:37:39  INFO      Loaded 61065 rows, 16 columns
+2026-05-28T03:37:39  INFO      Label distribution:
+label
+0    36000
+1    25065
+2026-05-28T03:37:39  INFO      STEP 2b — Defining 49-feature list
+2026-05-28T03:37:39  INFO      HTTPFeatureExtractor.FEATURE_COLUMNS has 49 features
+2026-05-28T03:37:39  INFO      ✓ Extractor already updated to 49 features — dropped features absent
+2026-05-28T03:37:39  INFO      49-feature list confirmed: ['url_length', 'url_path_depth', 'url_num_dots', 'url_num_special', 'url_num_hyphens'] … (first 5)
+2026-05-28T03:37:39  INFO      Building feature matrix via HTTPFeatureExtractor …
+Traceback (most recent call last):
+  File "/home/yewo/Documents/Projects/Ai-Augumented-IDS/scripts/retrain_49.py", line 473, in <module>
+    main()
+    ~~~~^^
+  File "/home/yewo/Documents/Projects/Ai-Augumented-IDS/scripts/retrain_49.py", line 292, in main
+    X_all_53 = build_feature_matrix_from_raw(raw_df)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'build_feature_matrix_from_raw' is not defined

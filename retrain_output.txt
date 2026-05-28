@@ -1,0 +1,83 @@
+2026-05-28T03:25:43  INFO      ======================================================================
+2026-05-28T03:25:43  INFO      AA-IDS 49-Feature Retraining Script
+2026-05-28T03:25:43  INFO      ======================================================================
+2026-05-28T03:25:43  INFO      STEP 2a — Loading CSIC data from /home/yewo/Documents/Projects/Ai-Augumented-IDS/data/processed/csic_cleaned.csv
+2026-05-28T03:25:44  INFO      Loaded 61065 rows, 16 columns
+2026-05-28T03:25:44  INFO      Label distribution:
+label
+0    36000
+1    25065
+2026-05-28T03:25:44  INFO      STEP 2b — Defining 49-feature list
+2026-05-28T03:25:44  INFO      Loaded 53 features from HTTPFeatureExtractor.FEATURE_COLUMNS
+2026-05-28T03:25:44  INFO      ✓ All 4 dropped features confirmed present in FEATURE_COLUMNS
+2026-05-28T03:25:44  INFO      49-feature list: ['url_length', 'url_path_depth', 'url_num_dots', 'url_num_special', 'url_num_hyphens'] … (first 5)
+2026-05-28T03:25:44  INFO      Building 53-feature matrix via HTTPFeatureExtractor …
+2026-05-28T03:25:44  INFO      Extracting features from 61065 rows …
+2026-05-28T03:25:50  INFO        … processed 10000 / 61065 rows
+2026-05-28T03:25:55  INFO        … processed 20000 / 61065 rows
+2026-05-28T03:26:01  INFO        … processed 30000 / 61065 rows
+2026-05-28T03:26:07  INFO        … processed 40000 / 61065 rows
+2026-05-28T03:26:14  INFO        … processed 50000 / 61065 rows
+2026-05-28T03:26:20  INFO        … processed 60000 / 61065 rows
+2026-05-28T03:26:22  INFO      Feature matrix shape: (61065, 53)
+2026-05-28T03:26:22  INFO      STEP 2c — Building X (49 features) and y
+2026-05-28T03:26:22  INFO      X shape: (61065, 49)  |  Attack ratio: 0.4105
+2026-05-28T03:26:22  INFO      Train: (48852, 49)  |  Test: (12213, 49)
+2026-05-28T03:26:22  INFO      Attack ratio — train: 0.4105  test: 0.4105
+2026-05-28T03:26:22  INFO      STEP 2d — Fitting StandardScaler on X_train (49 features)
+2026-05-28T03:26:22  INFO      Original scaler backed up: /home/yewo/Documents/Projects/Ai-Augumented-IDS/data/final/scaler.pkl → /home/yewo/Documents/Projects/Ai-Augumented-IDS/data/final/scaler_53.pkl
+2026-05-28T03:26:22  INFO      New scaler saved → /home/yewo/Documents/Projects/Ai-Augumented-IDS/data/final/scaler_49.pkl
+2026-05-28T03:26:22  INFO      STEP 2e — Scaling features
+2026-05-28T03:26:22  INFO      STEP 2f — Training RandomForestClassifier (same hyperparameters as original)
+2026-05-28T03:26:22  INFO        Params: {'n_estimators': 300, 'max_depth': None, 'min_samples_split': 2, 'class_weight': 'balanced', 'random_state': 42, 'n_jobs': -1}
+2026-05-28T03:26:32  INFO      Training complete. n_features_in_: 49
+2026-05-28T03:26:32  INFO      STEP 2g — Evaluating on test set
+2026-05-28T03:26:33  INFO      ✓ All threshold assertions passed
+2026-05-28T03:26:33  INFO      STEP 2h — Saving new model to /home/yewo/Documents/Projects/Ai-Augumented-IDS/models/rf_model_49.joblib
+2026-05-28T03:26:33  INFO      New model saved → /home/yewo/Documents/Projects/Ai-Augumented-IDS/models/rf_model_49.joblib
+2026-05-28T03:26:33  INFO      STEP 2i — Feature importance comparison (top 15)
+
+======================================================================
+EVALUATION RESULTS (49-feature model)
+======================================================================
+              precision    recall  f1-score   support
+
+       CLEAN     0.9222    0.9306    0.9264      7200
+      ATTACK     0.8989    0.8873    0.8931      5013
+
+    accuracy                         0.9128     12213
+   macro avg     0.9106    0.9089    0.9097     12213
+weighted avg     0.9127    0.9128    0.9127     12213
+
+Accuracy:          0.9128  (threshold ≥ 0.88)
+ROC-AUC:           0.9826  (threshold ≥ 0.95)
+Precision (CLEAN): 0.9222  (threshold ≥ 0.85)
+======================================================================
+
+======================================================================
+FEATURE IMPORTANCE COMPARISON
+======================================================================
+
+New model top-15 feature importances (old model not found for comparison):
+  query_entropy                            0.1330
+  body_entropy                             0.1308
+  query_length                             0.0902
+  body_length                              0.0864
+  url_entropy                              0.0861
+  url_length                               0.0821
+  url_num_dots                             0.0655
+  query_num_percent                        0.0430
+  body_num_percent                         0.0402
+  url_path_depth                           0.0390
+  url_num_hyphens                          0.0285
+  query_has_encoding                       0.0283
+  body_has_encoding                        0.0268
+  url_has_risky_ext                        0.0147
+  query_num_params                         0.0134
+======================================================================
+
+✅ Retraining complete.
+   New scaler  → /home/yewo/Documents/Projects/Ai-Augumented-IDS/data/final/scaler_49.pkl
+   New model   → /home/yewo/Documents/Projects/Ai-Augumented-IDS/models/rf_model_49.joblib
+
+Next: run  python scripts/promote_49.py  to promote artefacts to live paths.
