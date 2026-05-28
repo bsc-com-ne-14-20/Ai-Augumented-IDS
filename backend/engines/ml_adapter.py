@@ -6,14 +6,14 @@ Adapter wrapping the trained RandomForestClassifier ML anomaly detection model.
 Original model
 --------------
   RandomForestClassifier(n_estimators=300, class_weight='balanced', random_state=42)
-  Trained in src/ml_model/train1.ipynb on the 53-column z-scored feature matrix
-  from data/final/train.csv.
+  Trained in src/ml_model/train1.ipynb on the 49-column z-scored feature matrix
+  from data/processed/csic_cleaned.csv (4 CSIC-bias features dropped).
 
   The model expects a 2-D array where columns match the order in:
-    data/final/feature_names.txt  (53 features)
+    data/final/feature_names.txt  (49 features)
 
   Saved to disk by running:
-    python scripts/train_and_save_model.py
+    python scripts/retrain_49.py   (then promote_49.py)
 
 Public API added by this adapter
 ---------------------------------
@@ -32,6 +32,9 @@ Public API added by this adapter
 #   to avoid repeated disk I/O on the critical request path.
 # ADAPTER CHANGE: Now accepts raw features and applies z-scoring internally using
 #   the saved scaler, making it compatible with HTTPFeatureExtractor output.
+# ADAPTER CHANGE: Feature array is wrapped in a pandas DataFrame before calling
+#   scaler.transform() and model.predict_proba() to silence sklearn UserWarning
+#   about feature names and ensure correct column alignment.
 """
 
 import logging
@@ -40,6 +43,7 @@ from typing import Any
 
 import joblib
 import numpy as np
+import pandas as pd
 
 from backend.config import get_config
 
@@ -108,7 +112,7 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
     ----------
     feature_vector : dict
         Raw features produced by pipeline.http_feature_extractor.HTTPFeatureExtractor.
-        Must contain all 53 keys listed in data/final/feature_names.txt.
+        Must contain all 49 keys listed in data/final/feature_names.txt.
         Missing keys are filled with 0.0 and logged as a warning so the pipeline 
         does not crash on partial feature vectors.
 
@@ -130,6 +134,32 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
             "attack_type": "UNKNOWN_ANOMALY",
             "ml_unavailable": True,
         }
+
+    # Fast-path: if ALL attack-pattern features are zero, the request has no
+    # detectable attack signals. Return CLEAN immediately without calling the
+    # model, which may be biased toward CSIC URL patterns.
+    # This handles real browser traffic (short URLs, no cookies, keep-alive)
+    # that is structurally outside the CSIC 2010 training distribution.
+    _ATTACK_FEATURES = {
+        "query_has_sqli", "query_has_xss", "query_has_traversal",
+        "body_has_sqli", "body_has_xss", "body_has_traversal",
+        "cookie_has_sqli", "cookie_has_xss",
+        "url_has_double_encoding", "url_has_risky_ext",
+        "url_num_special", "query_num_special", "body_num_special",
+        "query_has_encoding", "body_has_encoding",
+    }
+    has_attack_signal = any(
+        float(feature_vector.get(feat, 0.0)) > 0.0
+        for feat in _ATTACK_FEATURES
+    )
+    if not has_attack_signal:
+        log.debug("ML fast-path: no attack signals detected — returning CLEAN")
+        return {
+            "verdict": "CLEAN",
+            "confidence": 0.0,
+            "severity": None,
+            "attack_type": "UNKNOWN_ANOMALY",
+        }
     
     # ADAPTER CHANGE: Assemble values in the trained column order; fill missing
     #   features with 0.0 (neutral for raw features).
@@ -138,15 +168,14 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
         log.warning("ML adapter: %d feature(s) missing, filling with 0.0: %s",
                     len(missing), missing[:10])
 
-    # Assemble raw features in correct order
-    raw_row = np.array(
-        [float(feature_vector.get(col, 0.0)) for col in FEATURE_COLUMNS],
-        dtype=np.float64,
-    ).reshape(1, -1)
-    
+    # Assemble raw features in correct order as a DataFrame (silences sklearn
+    # UserWarning about feature names and ensures correct column alignment).
+    raw_values = [float(feature_vector.get(col, 0.0)) for col in FEATURE_COLUMNS]
+    df = pd.DataFrame([raw_values], columns=FEATURE_COLUMNS)
+
     # Apply z-score normalization using the scaler
     try:
-        scaled_row = SCALER.transform(raw_row)
+        scaled = SCALER.transform(df)
     except Exception as exc:
         log.error("Feature scaling failed: %s", exc)
         return {
@@ -160,7 +189,7 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
     # ADAPTER CHANGE: predict_proba is called alongside predict so we can apply
     #   a configurable confidence threshold independently of the model's
     #   internal decision boundary.
-    proba = MODEL.predict_proba(scaled_row)[0]  # shape (2,): [P(clean), P(attack)]
+    proba = MODEL.predict_proba(scaled)[0]  # shape (2,): [P(clean), P(attack)]
     confidence = float(proba[1])
 
     if confidence < _THRESHOLD:
