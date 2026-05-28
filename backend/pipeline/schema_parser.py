@@ -4,7 +4,7 @@ AA-IDS Feature Schema Parser
 
 Implements Requirements 12.1, 12.2, 12.3, 12.4, 12.5, 12.6
 - Parse FEATURE_SCHEMA.json into Python dataclass
-- Validate schema contains exactly 53 features
+- Validate schema contains exactly 49 features (updated from 53; 4 CSIC-bias features dropped)
 - Validate feature names match expected patterns
 - Format schema objects back into valid JSON (pretty printer)
 - Ensure round-trip consistency (parse → print → parse)
@@ -28,7 +28,7 @@ class FeatureSchema:
         project: Project name
         description: Schema description
         http_version: HTTP version supported
-        total_features: Total number of features (must be 53)
+    total_features: Total number of features (must be 49)
         feature_groups: Dictionary mapping feature group names to counts
         features: List of feature names in canonical order
         srs_requirements: List of SRS requirement strings
@@ -45,27 +45,27 @@ class FeatureSchema:
     srs_requirements: List[str]
     data_sources: Dict[str, str]
     notes: str = ""
-    
+
     def __post_init__(self):
         """Validate schema after initialization."""
         self._validate()
-    
+
     def _validate(self):
         """
         Validate schema integrity.
-        
+
         Raises:
             ValueError: If validation fails
         """
-        # Requirement 12.3: Validate exactly 53 features
-        if self.total_features != 53:
+        # Requirement 12.3: Validate exactly 49 features
+        if self.total_features != 49:
             raise ValueError(
-                f"Schema must define exactly 53 features, got {self.total_features}"
+                f"Schema must define exactly 49 features, got {self.total_features}"
             )
-        
-        if len(self.features) != 53:
+
+        if len(self.features) != 49:
             raise ValueError(
-                f"Feature list must contain exactly 53 features, got {len(self.features)}"
+                f"Feature list must contain exactly 49 features, got {len(self.features)}"
             )
         
         # Requirement 12.4: Validate feature names match expected patterns
@@ -375,8 +375,7 @@ def validate_features(features: Dict[str, float], schema: FeatureSchema) -> bool
     if len(features) != schema.total_features:
         raise ValueError(
             f"Expected {schema.total_features} features, got {len(features)}"
-        )
-    
+        )    
     # Check feature names and order
     feature_names = list(features.keys())
     if feature_names != schema.features:
@@ -416,8 +415,8 @@ if __name__ == "__main__":
     # Test 2: Validate feature count
     print("\n[Test 2] Validate feature count")
     try:
-        assert schema.total_features == 53, f"Expected 53 features, got {schema.total_features}"
-        assert len(schema.features) == 53, f"Expected 53 feature names, got {len(schema.features)}"
+        assert schema.total_features == 49, f"Expected 49 features, got {schema.total_features}"
+        assert len(schema.features) == 49, f"Expected 49 feature names, got {len(schema.features)}"
         print(f"✓ Feature count validation passed")
     except AssertionError as e:
         print(f"✗ Failed: {e}")
