@@ -163,7 +163,7 @@ def evaluate(request_data: Dict[str, Any], features: Dict[str, float]) -> Dict[s
         - source_ip: str (optional, for brute force detection)
     
     features : dict
-        53-element feature vector (not used by rule engine, but kept
+        49-element feature vector (not used by rule engine, but kept
         for interface compatibility with orchestrator)
     
     Returns
