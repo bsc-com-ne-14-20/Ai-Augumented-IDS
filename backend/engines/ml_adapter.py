@@ -115,24 +115,6 @@ else:
 # Confidence threshold below which an ML flag is suppressed
 _THRESHOLD: float = config.ML_CONFIDENCE_THRESHOLD
 
-# Features that carry attack signals.  If ALL of these are zero the request
-# has no detectable attack pattern and the ML model is skipped entirely.
-# This prevents the CSIC-distribution-bias false-positive on structurally
-# simple benign requests (e.g. GET /) where url_entropy=0 and url_length=1
-# are extreme outliers relative to the CSIC training corpus.
-_CLEAN_FAST_PATH_FEATURES: frozenset[str] = frozenset({
-    # Semantic attack-pattern detectors
-    "query_has_sqli",        "query_has_xss",       "query_has_traversal",
-    "body_has_sqli",         "body_has_xss",        "body_has_traversal",
-    "cookie_has_sqli",       "cookie_has_xss",
-    # Structural attack indicators
-    "url_has_double_encoding", "url_has_risky_ext",
-    "url_num_special",       "query_num_special",   "body_num_special",
-    # Encoding / obfuscation signals
-    "query_has_encoding",    "body_has_encoding",
-    "url_num_percent",       "query_num_percent",   "body_num_percent",
-})
-
 
 def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
     """
@@ -167,37 +149,6 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
             "ml_unavailable": True,
         }
 
-    # Fast-path: if ALL attack-pattern features are zero, the request carries
-    # no detectable attack signals and can be returned CLEAN immediately.
-    #
-    # Root cause of the GET / false-positive:
-    #   The CSIC 2010 training corpus only contains requests to /tienda1/...
-    #   paths, so url_entropy=0 (single-char '/') and url_length=1 are extreme
-    #   outliers in the scaler's learned distribution (url_entropy scales to
-    #   ~-3.94 std). The model has never seen a benign request with these values
-    #   and classifies them as ANOMALY with high confidence.
-    #
-    #   The correct fix is this fast-path: a request with zero attack signals
-    #   cannot be an attack regardless of its URL shape, so we skip the model
-    #   entirely. The rule engine (which runs before this) already handles all
-    #   signature-based detection; the ML model's job is to catch anomalous
-    #   *attack patterns*, not to flag structurally simple benign requests.
-    #
-    # Attack-signal features: any non-zero value means a potential attack
-    # pattern was detected in the URL, query, body, or cookie.
-    has_attack_signal = any(
-        float(feature_vector.get(feat, 0.0)) > 0.0
-        for feat in _CLEAN_FAST_PATH_FEATURES
-    )
-    if not has_attack_signal:
-        log.debug("ML fast-path: no attack signals — returning CLEAN without model call")
-        return {
-            "verdict": "CLEAN",
-            "confidence": 0.0,
-            "severity": None,
-            "attack_type": "UNKNOWN_ANOMALY",
-        }
-    
     # ADAPTER CHANGE: Assemble values in the trained column order; fill missing
     #   features with 0.0 (neutral for raw features).
     missing = [col for col in FEATURE_COLUMNS if col not in feature_vector]
