@@ -52,6 +52,16 @@ for rule in _RULES:
 
 log.info("Rule engine loaded %d rules from %s", len(_RULES), _RULES_PATH)
 
+# Severity by attack category — used in evaluate() return payload so the
+# orchestrator and dashboard receive the correct threat level.
+_CATEGORY_SEVERITY: dict[str, str] = {
+    "SQL_INJECTION":  "critical",
+    "XSS":            "critical",
+    "PATH_TRAVERSAL": "high",
+    "CRLF_INJECTION": "high",
+    "BRUTE_FORCE":    "medium",
+}
+
 # ── Brute force counter (RE-006) ──────────────────────────────────────────────
 # Structure: {source_ip: [(timestamp, path), ...]}
 _brute_force_counter: Dict[str, List[tuple]] = defaultdict(list)
@@ -217,6 +227,7 @@ def evaluate(request_data: Dict[str, Any], features: Dict[str, float]) -> Dict[s
             "detection_source": "rule_engine",
             "attack_type": "BRUTE_FORCE",
             "matched_rule": "BF-001",
+            "severity": "medium",
             "confidence": None,
         }
     
@@ -244,17 +255,26 @@ def evaluate(request_data: Dict[str, Any], features: Dict[str, float]) -> Dict[s
             
             # Check both raw and decoded values
             if pattern.search(raw_value) or pattern.search(decoded_value):
+                category = rule["category"]
+                # Derive severity: prefer the rule's own field, fall back to
+                # the category map, then default to "high" for unknown categories.
+                severity = (
+                    rule.get("severity")
+                    or _CATEGORY_SEVERITY.get(category, "high")
+                ).lower()
+
                 log.info(
-                    "Rule match: rule=%s field=%s attack=%s",
-                    rule_id, field_name, rule["category"]
+                    "Rule match: rule=%s field=%s attack=%s severity=%s",
+                    rule_id, field_name, category, severity
                 )
                 
                 # RE-003: Return immediately on first match
                 return {
                     "is_attack": True,
                     "detection_source": "rule_engine",
-                    "attack_type": rule["category"],
+                    "attack_type": category,
                     "matched_rule": rule_id,
+                    "severity": severity,
                     "confidence": None,
                 }
     
