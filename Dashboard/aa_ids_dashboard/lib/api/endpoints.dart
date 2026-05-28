@@ -18,10 +18,10 @@ class ApiEndpoints {
   static const String analyze = '$_apiBase/analyze';
 
   // Metrics & Dashboard Data
-  static const String metrics = '$_apiBase/stats';
+  static const String metrics = '$_apiBase/api/v1/stats';
 
   // Alerts & Incidents
-  static const String alerts = '$_apiBase/alerts';
+  static const String alerts = '$_apiBase/api/v1/alerts';
 
   // Socket.IO
   static const String socketUrl = AppConstants.baseUrl;
