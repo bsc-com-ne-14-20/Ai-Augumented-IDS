@@ -75,6 +75,13 @@ else:
     try:
         SCALER = joblib.load(_scaler_path)
         log.info("ML scaler loaded from %s", _scaler_path)
+        # Startup assertion: hard-fail if wrong artefact is loaded
+        assert SCALER.n_features_in_ == 49, (
+            f"Scaler expects {SCALER.n_features_in_} features, want 49. "
+            "Re-run scripts/retrain_49.py and promote artefacts."
+        )
+    except AssertionError:
+        raise
     except Exception as exc:
         log.error("Failed to load ML scaler: %s", exc)
         SCALER = None
@@ -86,7 +93,7 @@ MODEL = None  # noqa: N816
 if not _model_path.exists():
     log.warning(
         "ML model not found at: %s - running in rule-engine-only mode. "
-        "Run  python scripts/train_and_save_model.py  to train and save the model.",
+        "Run  python scripts/retrain_49.py  to train and save the model.",
         _model_path
     )
 else:
@@ -94,6 +101,13 @@ else:
         MODEL = joblib.load(_model_path)
         log.info("ML model loaded from %s  |  estimators=%d",
                  _model_path, MODEL.n_estimators)
+        # Startup assertion: hard-fail if wrong artefact is loaded
+        assert MODEL.n_features_in_ == 49, (
+            f"Model expects {MODEL.n_features_in_} features, want 49. "
+            "Re-run scripts/retrain_49.py and promote artefacts."
+        )
+    except AssertionError:
+        raise
     except Exception as exc:
         log.error("Failed to load ML model: %s", exc)
         MODEL = None
@@ -168,8 +182,9 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
         log.warning("ML adapter: %d feature(s) missing, filling with 0.0: %s",
                     len(missing), missing[:10])
 
-    # Assemble raw features in correct order as a DataFrame (silences sklearn
-    # UserWarning about feature names and ensures correct column alignment).
+    # Assemble raw features in correct order as a DataFrame.
+    # Passing a named DataFrame to scaler.transform() satisfies sklearn's
+    # internal column-order validation (scaler was fitted with a DataFrame).
     raw_values = [float(feature_vector.get(col, 0.0)) for col in FEATURE_COLUMNS]
     df = pd.DataFrame([raw_values], columns=FEATURE_COLUMNS)
 
@@ -186,9 +201,10 @@ def adapt_ml_model(feature_vector: dict[str, Any]) -> dict[str, Any]:
             "scaling_error": True,
         }
 
-    # ADAPTER CHANGE: predict_proba is called alongside predict so we can apply
-    #   a configurable confidence threshold independently of the model's
-    #   internal decision boundary.
+    # The model was trained on a plain numpy array (output of scaler.transform),
+    # so pass the raw scaled ndarray — not a DataFrame — to predict_proba.
+    # Passing a DataFrame here would trigger the inverse sklearn UserWarning
+    # "fitted without feature names".
     proba = MODEL.predict_proba(scaled)[0]  # shape (2,): [P(clean), P(attack)]
     confidence = float(proba[1])
 
