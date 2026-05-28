@@ -14,6 +14,7 @@ class Incident {
   final String detector;
   final String alertMessage;
   final String httpRequest;
+  final String? attackType;      // "SQL_INJECTION", "XSS", etc. "Unknown" = clean traffic
 
   final int flagStep;
 
@@ -30,6 +31,7 @@ class Incident {
     required this.detector,
     required this.alertMessage,
     required this.httpRequest,
+    this.attackType,
     this.flagStep = 3,
   });
 
@@ -47,6 +49,7 @@ class Incident {
     String? detector,
     String? alertMessage,
     String? httpRequest,
+    String? attackType,
     int? flagStep,
   }) {
     return Incident(
@@ -62,6 +65,7 @@ class Incident {
       detector: detector ?? this.detector,
       alertMessage: alertMessage ?? this.alertMessage,
       httpRequest: httpRequest ?? this.httpRequest,
+      attackType: attackType ?? this.attackType,
       flagStep: flagStep ?? this.flagStep,
     );
   }
@@ -87,6 +91,7 @@ class Incident {
       detector: json['detector']?.toString() ?? '',
       alertMessage: json['alertMessage']?.toString() ?? '',
       httpRequest: json['httpRequest']?.toString() ?? '',
+      attackType: json['attackType']?.toString(),
       flagStep: json['flagStep'] is int ? json['flagStep'] as int : int.tryParse(json['flagStep']?.toString() ?? '') ?? 3,
     );
   }

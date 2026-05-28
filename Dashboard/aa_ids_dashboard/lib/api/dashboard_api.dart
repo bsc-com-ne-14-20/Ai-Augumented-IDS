@@ -145,6 +145,7 @@ class DashboardApi {
       detector: result.detectionSource ?? 'Unknown',
       alertMessage: result.verdict,
       httpRequest: 'GET ${result.requestSummary.path}${result.requestSummary.queryString.isNotEmpty ? '?${result.requestSummary.queryString}' : ''}',
+      attackType: result.attackType,
     );
   }
 

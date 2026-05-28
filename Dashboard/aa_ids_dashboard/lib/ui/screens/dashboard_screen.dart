@@ -76,21 +76,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isMobile = _isMobile(context);
     final isTablet = _isTablet(context);
     
-    final int unreviewedCount = dashboardProvider.incidents
+    // Filter out "Unknown" attack types and root "/" endpoint (these are clean/legitimate requests)
+    final List<Incident> actualAttacks = dashboardProvider.incidents
+        .where((i) => i.attackType?.toLowerCase() != 'unknown' && 
+                      i.attackType != null && 
+                      i.endpoint != '/')
+        .toList();
+    
+    // Count unreviewed incidents (only real attacks, exclude Unknown and "/" endpoint)
+    final int unreviewedCount = actualAttacks
         .where((i) => i.reviewedStatus.toLowerCase() != 'yes')
         .length;
+    
+    // Count attacks detected (only non-Unknown attacks and non-root endpoints)
+    final int attacksDetected = actualAttacks.length;
+    
+    // Total requests inspected - count all incidents (includes clean/Unknown traffic)
+    final int requestsInspected = dashboardProvider.incidents.length;
 
     final cards = [
       DashboardMetricCard(
         title: 'ATTACKS DETECTED',
-        value: dashboardProvider.metrics?.totalAttactsDetected.toString() ?? '0',
+        value: attacksDetected.toString(),
         accentColor: const Color(0xFF4A9EFF),
         icon: Icons.list_alt_rounded,
         showBottomSection: false,
       ),
       DashboardMetricCard(
         title: 'REQUESTS INSPECTED',
-        value: dashboardProvider.metrics?.totalRequestsAnalyzed.toString() ?? '0',
+        value: requestsInspected.toString(),
         accentColor: const Color(0xFF9B6BFF),
         icon: Icons.article_outlined,
         showBottomSection: false,
@@ -155,8 +169,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isMobile = _isMobile(context);
     final isTablet = _isTablet(context);
 
+    // Filter out "Unknown" attack types and root "/" endpoint - they are clean traffic, not real incidents
+    final List<Incident> filteredIncidents = dashboardProvider.incidents
+        .where((i) => i.attackType?.toLowerCase() != 'unknown' && 
+                      i.attackType != null && 
+                      i.endpoint != '/')
+        .toList();
+
     final incidentList = IncidentList(
-      incidents: dashboardProvider.incidents,
+      incidents: filteredIncidents,
       onIncidentSelected: (incident) {
         setState(() => _selectedIncident = incident);
       },
