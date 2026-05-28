@@ -38,15 +38,11 @@ method_get
 method_post
 method_put
 method_suspicious
-cookie_length
 cookie_has_sqli
 cookie_has_xss
-cookie_is_present
 content_type_is_form
 content_type_is_json
 content_type_is_none
-connection_is_close
-connection_keep_alive
 post_no_content_type
 get_with_body
 post_empty_body
