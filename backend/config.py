@@ -108,6 +108,10 @@ class Config:
         self.ML_CONFIDENCE_THRESHOLD: float = float(
             os.environ.get("ML_CONFIDENCE_THRESHOLD", "0.65")
         )
+
+        # Number of features the live model and scaler expect.
+        # Update this constant (and retrain) whenever the feature set changes.
+        self.ML_FEATURE_COUNT: int = 49
         
         # ── Rule Engine Parameters ────────────────────────────────────────────
         self.RULE_ENGINE_THRESHOLD: int = int(
