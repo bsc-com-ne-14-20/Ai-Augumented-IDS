@@ -7,7 +7,7 @@ Original function being wrapped
 --------------------------------
   CRSEngine.inspect(row: pd.Series) -> DetectionResult
 
-  The engine expects a pandas Series whose index values are the 53 z-scored
+  The engine expects a pandas Series whose index values are the 49 z-scored
   feature column names from data/final/feature_names.txt.  It returns a
   DetectionResult dataclass whose key fields are:
     .is_attack     bool
@@ -86,7 +86,7 @@ def adapt_rule_engine(feature_vector: dict[str, Any]) -> dict[str, Any]:
     feature_vector : dict
         Z-scored features produced by pipeline.preprocessor.extract_features().
         Keys must include every feature column the rule engine references
-        (subset of the 53-column feature set in data/final/feature_names.txt).
+        (subset of the 49-column feature set in data/final/feature_names.txt).
 
     Returns
     -------
