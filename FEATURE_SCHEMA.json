@@ -1,15 +1,15 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "project": "AA-IDS: AI-Augmented HTTP Anomaly Intrusion Detection System",
-  "description": "53 HTTP features extracted from CSIC 2010 dataset",
+  "description": "49 HTTP features extracted from CSIC 2010 dataset (4 domain-shift features removed)",
   "http_version": "1.1",
-  "total_features": 53,
+  "total_features": 49,
   "feature_groups": {
     "url_features": 12,
     "query_string_features": 11,
     "body_payload_features": 13,
     "http_method_features": 4,
-    "header_features": 13
+    "header_features": 9
   },
   "features": [
     "url_length",
@@ -52,31 +52,36 @@
     "method_post",
     "method_put",
     "method_suspicious",
-    "cookie_length",
     "cookie_has_sqli",
     "cookie_has_xss",
-    "cookie_is_present",
     "content_type_is_form",
     "content_type_is_json",
     "content_type_is_none",
-    "connection_is_close",
-    "connection_keep_alive",
     "post_no_content_type",
     "get_with_body",
     "post_empty_body",
     "content_length_mismatch"
   ],
   "srs_requirements": [
-    "FE-001: Exactly 53 numeric features",
+    "FE-001: Exactly 49 numeric features (updated from 53; 4 CSIC-bias features dropped)",
     "FE-002: URL decoding for attack detection",
     "FE-003: Shannon entropy computation",
     "FE-004: Semantic handling of missing fields",
     "FE-005: Reproducible, JSON-serializable output",
     "FE-006: Performance tracking (<50ms per request)"
   ],
+  "dropped_features": {
+    "reason": "CSIC 2010 structural bias — near-zero variance in real browser traffic",
+    "features": [
+      "cookie_is_present",
+      "cookie_length",
+      "connection_is_close",
+      "connection_keep_alive"
+    ]
+  },
   "data_sources": {
     "primary": "CSIC 2010 HTTP Dataset",
     "supplementary": "ECML/PKDD 2007 Challenge Dataset"
   },
-  "notes": "This schema defines the exact feature order expected by the ML model. Any deviation will cause prediction failures."
+  "notes": "Schema v2.0: 4 CSIC-bias features removed (see scripts/retrain_49.py). This schema defines the exact feature order expected by the ML model. Any deviation will cause prediction failures."
 }
