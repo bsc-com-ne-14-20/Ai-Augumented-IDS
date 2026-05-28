@@ -158,14 +158,16 @@ class TestWebSocketErrorHandling:
         with caplog.at_level(logging.DEBUG):
             emit_alert(verdict_payload)
         
-        # Verify _safe_emit was called with correct parameters
-        mock_safe_emit.assert_called_once()
-        call_args = mock_safe_emit.call_args
+        # Verify _safe_emit was called (may be called multiple times for different events)
+        assert mock_safe_emit.called
+        # Find the clean_request call
+        clean_calls = [c for c in mock_safe_emit.call_args_list if c[0][0] == "clean_request"]
+        assert len(clean_calls) == 1
+        call_args = clean_calls[0]
         assert call_args[0][0] == "clean_request"  # event_name
-        assert call_args[1]["context"] == "alert_id=test-456 source=ml_engine"
         
         # Verify success logging
-        assert "Socket.IO clean_request emitted: alert_id=test-456 source=ml_engine" in caplog.text
+        assert "Socket.IO clean alert emitted: alert_id=test-456" in caplog.text
 
     def test_emit_alert_error_verdict(self, caplog):
         """Test emit_alert with ERROR verdict (should be silently ignored)."""

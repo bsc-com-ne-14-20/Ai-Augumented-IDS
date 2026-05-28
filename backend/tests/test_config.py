@@ -39,7 +39,8 @@ class TestConfigLoading:
         
         try:
             # Disable validation for this test since ML files may not exist
-            config = Config(validate=False)
+            # Pass a non-existent env_file so load_dotenv doesn't reload .env
+            config = Config(env_file="/nonexistent/.env.test", validate=False)
             
             # Verify default values
             assert config.IDS_API_KEY == "dev-api-key-change-in-production"
@@ -249,7 +250,7 @@ class TestConfigTypeSafety:
             del os.environ["DATABASE_URL"]
         
         try:
-            config = Config(validate=False)
+            config = Config(env_file="/nonexistent/.env.test", validate=False)
             assert config.DATABASE_URL is None
         
         finally:
@@ -494,7 +495,7 @@ class TestConfigValidation:
         
         try:
             with caplog.at_level(logging.WARNING):
-                config = Config(validate=False)
+                config = Config(env_file="/nonexistent/.env.test", validate=False)
                 config.validate()
             
             # Check that warning was logged
@@ -514,7 +515,7 @@ class TestConfigValidation:
         
         try:
             with caplog.at_level(logging.WARNING):
-                config = Config(validate=False)
+                config = Config(env_file="/nonexistent/.env.test", validate=False)
                 config.validate()
             
             # Check that warning was logged
