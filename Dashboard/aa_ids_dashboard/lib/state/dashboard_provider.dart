@@ -55,6 +55,7 @@ class DashboardProvider extends ChangeNotifier {
   // Global loading state - shows when any critical operation is pending
   bool _isAppLoading = false;
   Timer? _loadingTimeout;
+  Timer? _metricsRefreshTimer;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GETTERS
@@ -122,6 +123,7 @@ class DashboardProvider extends ChangeNotifier {
       fetchMetrics(),
       fetchAlerts(resetPagination: true),
     ]);
+    _metricsRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) => fetchMetrics());
     
     print('[Provider] loadInitialDashboardData() - Sequence complete');
   }

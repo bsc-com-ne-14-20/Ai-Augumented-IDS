@@ -18,7 +18,7 @@ class ApiEndpoints {
   static const String analyze = '$_apiBase/analyze';
 
   // Metrics & Dashboard Data
-  static const String metrics = '$_apiBase/stats';
+  static const String metrics = '$_apiBase/metrics';
 
   // Alerts & Incidents
   static const String alerts = '$_apiBase/alerts';

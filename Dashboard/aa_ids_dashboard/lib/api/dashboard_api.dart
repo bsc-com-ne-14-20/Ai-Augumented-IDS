@@ -5,13 +5,17 @@ import 'package:aa_ids_dashboard/models/dashboard_models.dart';
 import 'dart:async';
 
 class DashboardApi {
+  static const Map<String, String> _headers = {
+    'Content-Type': 'application/json',
+    'X-IDS-API-Key': 'ids-demo-key-2024',
+  };
 
   // ── GET /health ────────────────────────────────────────────────────────────
 
   /// Check backend health status
   Future<HealthStatus> checkHealth() async {
     try {
-      final response = await http.get(Uri.parse(ApiEndpoints.health))
+      final response = await http.get(Uri.parse(ApiEndpoints.health), headers: _headers)
           .timeout(const Duration(seconds: 15));
       
       if (response.statusCode == 200) {
@@ -62,7 +66,7 @@ class DashboardApi {
   /// Required to populate overview cards, charts, and indicators
   Future<MetricsData> fetchMetrics() async {
     try {
-      final response = await http.get(Uri.parse(ApiEndpoints.metrics))
+      final response = await http.get(Uri.parse(ApiEndpoints.metrics), headers: _headers)
           .timeout(const Duration(seconds: 15));
       
       if (response.statusCode == 200) {
@@ -109,7 +113,7 @@ class DashboardApi {
       final uri = Uri.parse(ApiEndpoints.alerts)
           .replace(queryParameters: queryParams);
       
-      final response = await http.get(uri)
+      final response = await http.get(uri, headers: _headers)
           .timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
