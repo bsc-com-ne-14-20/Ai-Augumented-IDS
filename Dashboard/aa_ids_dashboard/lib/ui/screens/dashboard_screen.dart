@@ -79,8 +79,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Filter out "Unknown" attack types and root "/" endpoint (these are clean/legitimate requests)
     final List<Incident> actualAttacks = dashboardProvider.incidents
         .where((i) => i.attackType?.toLowerCase() != 'unknown' && 
-                      i.attackType != null && 
-                      i.endpoint != '/')
+                      i.attackType != null 
+              )
         .toList();
     
     // Count unreviewed incidents (only real attacks, exclude Unknown and "/" endpoint)
