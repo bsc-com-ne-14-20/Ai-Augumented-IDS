@@ -18,3 +18,32 @@ aa_ids_backend/.venv/
 .venv/
 models/*.joblib
 models/*.pkl
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment secrets
+.env
+*.env
+
+# Database
+db.sqlite3
+
+# Django collected static files
+staticfiles/
+
+# ML/Data artifacts
+models/
+data/
+traffic_data/
+validation_results/
+*.pkl
+
+# Large security lists
+SecLists/
+
+# Flutter/Dart build artifacts
+build/
+.dart_tool/
