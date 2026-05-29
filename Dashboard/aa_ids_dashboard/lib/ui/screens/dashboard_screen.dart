@@ -79,7 +79,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Filter out "Unknown" attack types and root "/" endpoint (these are clean/legitimate requests)
     final List<Incident> actualAttacks = dashboardProvider.incidents
         .where((i) => i.attackType?.toLowerCase() != 'unknown' && 
-                      i.attackType != null 
+                      i.attackType != null &&
+                      i.httpRequest != 'GET /'
               )
         .toList();
     
@@ -172,7 +173,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Filter out "Unknown" attack types and root "/" endpoint - they are clean traffic, not real incidents
     final List<Incident> filteredIncidents = dashboardProvider.incidents
         .where((i) => i.attackType?.toLowerCase() != 'unknown' && 
-                      i.attackType != null )
+                      i.attackType != null &&
+                      i.httpRequest != 'GET /'
+              )
         .toList();
 
     final incidentList = IncidentList(
