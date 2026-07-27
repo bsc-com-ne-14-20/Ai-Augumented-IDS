@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AA-IDS | AI-Augmented Intrusion Detection System</title>
+    <meta name="description" content="AI-Augmented HTTP Anomaly Intrusion Detection System (AA-IDS). A hybrid web application intrusion detection architecture.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <span>AA-IDS</span>
+            </div>
+            <div class="nav-links">
+                <a href="#about">What it is</a>
+                <a href="#architecture">How it works</a>
+                <a href="#usage">Usage API</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <div class="badge">COM422 Project</div>
+            <h1 class="hero-title">Next-Gen Web Application <span class="gradient-text">Intrusion Detection</span></h1>
+            <p class="hero-subtitle">A hybrid architecture employing sequential rule-based and machine learning pipelines to detect, analyze, and classify malicious HTTP traffic in real time.</p>
+            <div class="hero-actions">
+                <a href="#usage" class="btn btn-primary">View API Documentation</a>
+                <a href="#architecture" class="btn btn-secondary">Explore Architecture</a>
+            </div>
+        </div>
+        <div class="hero-background">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+        </div>
+    </header>
+
+    <main>
+        <section id="about" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>What is AA-IDS?</h2>
+                    <p>Understanding the core mission of our AI-Augmented System.</p>
+                </div>
+                <div class="about-grid">
+                    <div class="about-card">
+                        <div class="card-icon">⚡</div>
+                        <h3>Real-time Analysis</h3>
+                        <p>Processes incoming HTTP logs instantly, classifying traffic flows with an optimal balance of speed and detection accuracy.</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="card-icon">🛡️</div>
+                        <h3>Hybrid Security</h3>
+                        <p>Combines deterministic OWASP Core Rule Sets with advanced Machine Learning to catch both known and zero-day threats.</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="card-icon">📊</div>
+                        <h3>Forensic Categorization</h3>
+                        <p>Not only detects attacks but categorizes them into specific vectors (SQLi, XSS, Path Traversal) for detailed incident response.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture" class="section bg-light">
+            <div class="container">
+                <div class="section-header">
+                    <h2>What it does</h2>
+                    <p>A sequential three-layer detection pipeline.</p>
+                </div>
+                
+                <div class="pipeline">
+                    <div class="pipeline-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>OWASP CRS Rule Engine</h3>
+                            <p>Acts as the first gate. Detects known attack signatures immediately. If an attack is found, traffic is blocked and logged.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pipeline-connector">
+                        <div class="connector-line"></div>
+                        <div class="connector-label">Ambiguous / Cleared</div>
+                    </div>
+
+                    <div class="pipeline-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Random Forest Binary Classifier</h3>
+                            <p>Evaluates complex traffic patterns. Fast binary classification (Normal vs Attack). Normal traffic is allowed through.</p>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-connector">
+                        <div class="connector-line"></div>
+                        <div class="connector-label">Attack Confirmed</div>
+                    </div>
+
+                    <div class="pipeline-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>XGBoost Multi-Class Classifier</h3>
+                            <p>The forensic engine. Deeply analyzes malicious payloads to accurately categorize the specific attack vector (e.g. SQLi, XSS).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="usage" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>How to use it</h2>
+                    <p>Integrate our fast, JSON-based REST API.</p>
+                </div>
+
+                <div class="api-demo">
+                    <div class="api-info">
+                        <h3>Analyze Traffic Endpoint</h3>
+                        <p>Pass your HTTP logs to the analysis engine for instant verdicts. Requires your assigned API key via the <code>X-IDS-Key</code> header.</p>
+                        <div class="endpoint">
+                            <span class="method">POST</span>
+                            <span class="url">/api/v1/analyse</span>
+                        </div>
+                    </div>
+                    
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>cURL Request Example</span>
+                            <button class="copy-btn" onclick="copyCode()">Copy</button>
+                        </div>
+                        <pre><code id="api-code">curl -X POST http://localhost:5000/api/v1/analyse \
+  -H "X-IDS-Key: dev-api-key-12345" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "logs": [{
+        "method": "POST",
+        "url": "/api/login",
+        "query_string": "user=admin' OR '1'='1",
+        "headers": {},
+        "body": "password=admin",
+        "response_code": 200
+    }]
+}'</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    <span>AA-IDS</span>
+                </div>
+                <p>Developed for University of Malawi — COM422</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
